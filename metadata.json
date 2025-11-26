@@ -1,0 +1,5 @@
+{
+  "name": "HydroStat: Flood Frequency Analyzer",
+  "description": "A professional hydrological tool for Flood Frequency Analysis (FFA). Ingests raw streamflow data (Hourly, Daily, Monthly, or Annual), converts it to Annual Maxima Series (AMS), fits statistical distributions (Gumbel, Log-Normal), and visualizes Return Periods with AI-powered insights.",
+  "requestFramePermissions": []
+}
