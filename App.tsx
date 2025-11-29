@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import DataUploader from './components/DataUploader';
+import ManualDataEntry from './components/ManualDataEntry';
 import FloodFrequencyChart from './components/FloodFrequencyChart';
 import GeminiReport from './components/GeminiReport';
 import { convertToAMS } from './utils/dataProcessor';
@@ -7,6 +8,8 @@ import { performAnalysis } from './utils/statistics';
 import { AnalysisResult, DistributionType, TimeGranularity } from './types';
 
 const App: React.FC = () => {
+  const [inputMethod, setInputMethod] = useState<'upload' | 'manual'>('upload');
+  
   const [rawData, setRawData] = useState<any[] | null>(null);
   const [headers, setHeaders] = useState<string[]>([]);
   const [fileName, setFileName] = useState<string>('');
@@ -28,6 +31,7 @@ const App: React.FC = () => {
       setHeaders(cols);
       // Auto-guess columns
       const dateGuess = cols.find(c => c.toLowerCase().includes('date') || c.toLowerCase().includes('year'));
+      // Added 'flow' and 'val' checks, manual entry uses 'Flow'
       const valGuess = cols.find(c => c.toLowerCase().includes('val') || c.toLowerCase().includes('flow') || c.toLowerCase().includes('peak') || c.toLowerCase().includes('discharge'));
       if (dateGuess) setDateCol(dateGuess);
       if (valGuess) setValCol(valGuess);
@@ -57,7 +61,7 @@ const App: React.FC = () => {
             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold">H</div>
             <h1 className="text-xl font-bold text-slate-800 tracking-tight">HydroStat</h1>
           </div>
-          <div className="text-xs text-slate-400 font-mono">v1.0.0</div>
+          <div className="text-xs text-slate-400 font-mono">v1.1.0</div>
         </div>
       </header>
 
@@ -65,12 +69,32 @@ const App: React.FC = () => {
         
         {/* Intro Section */}
         {!rawData && (
-          <div className="max-w-2xl mx-auto">
+          <div className="max-w-3xl mx-auto">
             <h2 className="text-3xl font-bold text-slate-900 text-center mb-4">Flood Frequency Analysis</h2>
             <p className="text-slate-600 text-center mb-8">
-              Professional hydrological modeling tool. Upload your streamflow time-series data to calculate Annual Recurrence Intervals (ARI) and predict flood magnitudes using Gumbel or Log-Normal distributions.
+              Professional hydrological modeling tool. Upload your streamflow time-series data or enter it manually to calculate Annual Recurrence Intervals (ARI) and predict flood magnitudes.
             </p>
-            <DataUploader onDataLoaded={handleDataLoaded} />
+            
+            <div className="bg-white p-1 rounded-xl shadow-sm border border-slate-200 inline-flex mb-6 w-full sm:w-auto relative left-1/2 -translate-x-1/2">
+               <button 
+                 onClick={() => setInputMethod('upload')}
+                 className={`px-6 py-2 rounded-lg text-sm font-medium transition ${inputMethod === 'upload' ? 'bg-blue-100 text-blue-700' : 'text-slate-500 hover:text-slate-700'}`}
+               >
+                 Upload File (CSV)
+               </button>
+               <button 
+                 onClick={() => setInputMethod('manual')}
+                 className={`px-6 py-2 rounded-lg text-sm font-medium transition ${inputMethod === 'manual' ? 'bg-blue-100 text-blue-700' : 'text-slate-500 hover:text-slate-700'}`}
+               >
+                 Manual Entry
+               </button>
+            </div>
+
+            {inputMethod === 'upload' ? (
+              <DataUploader onDataLoaded={handleDataLoaded} />
+            ) : (
+              <ManualDataEntry onDataLoaded={handleDataLoaded} />
+            )}
           </div>
         )}
 
