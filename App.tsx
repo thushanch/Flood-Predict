@@ -31,7 +31,6 @@ const App: React.FC = () => {
       setHeaders(cols);
       // Auto-guess columns
       const dateGuess = cols.find(c => c.toLowerCase().includes('date') || c.toLowerCase().includes('year'));
-      // Added 'flow' and 'val' checks, manual entry uses 'Flow'
       const valGuess = cols.find(c => c.toLowerCase().includes('val') || c.toLowerCase().includes('flow') || c.toLowerCase().includes('peak') || c.toLowerCase().includes('discharge'));
       if (dateGuess) setDateCol(dateGuess);
       if (valGuess) setValCol(valGuess);
@@ -53,171 +52,203 @@ const App: React.FC = () => {
   }, [rawData, dateCol, valCol, granularity, distribution]);
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-20">
-      {/* Header */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold">H</div>
-            <h1 className="text-xl font-bold text-slate-800 tracking-tight">HydroStat</h1>
-          </div>
-          <div className="text-xs text-slate-400 font-mono">v1.1.0</div>
-        </div>
-      </header>
-
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <div 
+      className="min-h-screen bg-cover bg-center bg-fixed bg-no-repeat"
+      style={{ 
+        backgroundImage: `url('https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?q=80&w=2574&auto=format&fit=crop')`,
+      }}
+    >
+      {/* Overlay to ensure readability */}
+      <div className="min-h-screen w-full bg-slate-50/85 backdrop-blur-sm pb-20">
         
-        {/* Intro Section */}
-        {!rawData && (
-          <div className="max-w-3xl mx-auto">
-            <h2 className="text-3xl font-bold text-slate-900 text-center mb-4">Flood Frequency Analysis</h2>
-            <p className="text-slate-600 text-center mb-8">
-              Professional hydrological modeling tool. Upload your streamflow time-series data or enter it manually to calculate Annual Recurrence Intervals (ARI) and predict flood magnitudes.
-            </p>
-            
-            <div className="bg-white p-1 rounded-xl shadow-sm border border-slate-200 inline-flex mb-6 w-full sm:w-auto relative left-1/2 -translate-x-1/2">
-               <button 
-                 onClick={() => setInputMethod('upload')}
-                 className={`px-6 py-2 rounded-lg text-sm font-medium transition ${inputMethod === 'upload' ? 'bg-blue-100 text-blue-700' : 'text-slate-500 hover:text-slate-700'}`}
-               >
-                 Upload File (CSV)
-               </button>
-               <button 
-                 onClick={() => setInputMethod('manual')}
-                 className={`px-6 py-2 rounded-lg text-sm font-medium transition ${inputMethod === 'manual' ? 'bg-blue-100 text-blue-700' : 'text-slate-500 hover:text-slate-700'}`}
-               >
-                 Manual Entry
-               </button>
+        {/* Header */}
+        <header className="bg-white/90 backdrop-blur border-b border-slate-200 sticky top-0 z-20 shadow-sm">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold shadow-lg">H</div>
+              <h1 className="text-xl font-bold text-slate-800 tracking-tight">HydroStat</h1>
             </div>
-
-            {inputMethod === 'upload' ? (
-              <DataUploader onDataLoaded={handleDataLoaded} />
-            ) : (
-              <ManualDataEntry onDataLoaded={handleDataLoaded} />
-            )}
+            <div className="text-xs text-slate-500 font-mono bg-slate-100 px-2 py-1 rounded">v2.0.0</div>
           </div>
-        )}
+        </header>
 
-        {/* Configuration Panel */}
-        {rawData && (
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-            
-            {/* Sidebar Controls */}
-            <div className="lg:col-span-1 space-y-6">
-              <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="font-semibold text-slate-800">Configuration</h3>
-                  <button onClick={() => setRawData(null)} className="text-xs text-red-500 hover:underline">Reset</button>
-                </div>
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+          
+          {/* Intro Section */}
+          {!rawData && (
+            <div className="max-w-3xl mx-auto mt-10">
+              <div className="bg-white/80 backdrop-blur-md p-8 rounded-2xl shadow-xl border border-white/50 text-center">
+                <h2 className="text-4xl font-bold text-slate-900 mb-4 tracking-tight">Flood Frequency Analysis</h2>
+                <p className="text-slate-600 mb-8 text-lg leading-relaxed">
+                  Advanced hydrological modeling for professionals. Upload streamflow data or enter manually to fit 
+                  <span className="font-semibold text-blue-700"> Gumbel, Log-Pearson III, Normal, or Weibull </span> 
+                  distributions and predict extreme events.
+                </p>
                 
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-500 mb-1 uppercase">Time Granularity</label>
-                    <select 
-                      value={granularity}
-                      onChange={(e) => setGranularity(e.target.value as TimeGranularity)}
-                      className="w-full p-2 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none"
-                    >
-                      {Object.values(TimeGranularity).map(g => (
-                        <option key={g} value={g}>{g}</option>
-                      ))}
-                    </select>
-                  </div>
+                <div className="bg-slate-100/80 p-1 rounded-xl inline-flex mb-8 mx-auto shadow-inner">
+                   <button 
+                     onClick={() => setInputMethod('upload')}
+                     className={`px-6 py-2 rounded-lg text-sm font-semibold transition-all ${inputMethod === 'upload' ? 'bg-white text-blue-700 shadow-md transform scale-105' : 'text-slate-500 hover:text-slate-700'}`}
+                   >
+                     Upload CSV
+                   </button>
+                   <button 
+                     onClick={() => setInputMethod('manual')}
+                     className={`px-6 py-2 rounded-lg text-sm font-semibold transition-all ${inputMethod === 'manual' ? 'bg-white text-blue-700 shadow-md transform scale-105' : 'text-slate-500 hover:text-slate-700'}`}
+                   >
+                     Manual Entry
+                   </button>
+                </div>
 
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-500 mb-1 uppercase">Distribution Model</label>
-                    <select 
-                      value={distribution}
-                      onChange={(e) => setDistribution(e.target.value as DistributionType)}
-                      className="w-full p-2 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none"
-                    >
-                      {Object.values(DistributionType).map(d => (
-                        <option key={d} value={d}>{d}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="pt-4 border-t border-slate-100">
-                    <label className="block text-xs font-semibold text-slate-500 mb-1 uppercase">Date Column</label>
-                    <select 
-                      value={dateCol}
-                      onChange={(e) => setDateCol(e.target.value)}
-                      className="w-full p-2 text-sm border border-slate-300 rounded-md mb-3"
-                    >
-                      <option value="">Select Column...</option>
-                      {headers.map(h => <option key={h} value={h}>{h}</option>)}
-                    </select>
-
-                    <label className="block text-xs font-semibold text-slate-500 mb-1 uppercase">Value Column (Flow)</label>
-                    <select 
-                      value={valCol}
-                      onChange={(e) => setValCol(e.target.value)}
-                      className="w-full p-2 text-sm border border-slate-300 rounded-md"
-                    >
-                      <option value="">Select Column...</option>
-                      {headers.map(h => <option key={h} value={h}>{h}</option>)}
-                    </select>
-                  </div>
+                <div className="animate-fade-in-up">
+                  {inputMethod === 'upload' ? (
+                    <DataUploader onDataLoaded={handleDataLoaded} />
+                  ) : (
+                    <ManualDataEntry onDataLoaded={handleDataLoaded} />
+                  )}
                 </div>
               </div>
-
-              {/* Quick Stats */}
-              {result && (
-                <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-                  <h3 className="font-semibold text-slate-800 mb-3">Dataset Stats</h3>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-slate-500">Record Length</span>
-                      <span className="font-mono">{result.stats.n} years</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-slate-500">Mean Flow</span>
-                      <span className="font-mono">{result.stats.mean.toFixed(1)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-slate-500">Max Observed</span>
-                      <span className="font-mono">{Math.max(...result.ams.map(a => a.value)).toFixed(1)}</span>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
+          )}
 
-            {/* Main Content Area */}
-            <div className="lg:col-span-3 space-y-6">
+          {/* Configuration Panel */}
+          {rawData && (
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
               
-              {/* Visualization */}
-              {result ? (
-                <>
-                  <FloodFrequencyChart result={result} distributionType={distribution} />
-                  
-                  {/* Results Table */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                     {[10, 50, 100, 500].map(ari => {
-                       const key = `q${ari}` as keyof typeof result.predictions;
-                       return (
-                         <div key={ari} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm text-center">
-                           <div className="text-xs text-slate-500 uppercase font-bold">{ari}-Year Flood</div>
-                           <div className="text-2xl font-bold text-blue-600 mt-1">{result.predictions[key].toFixed(1)}</div>
-                           <div className="text-xs text-slate-400 mt-1">m³/s</div>
-                         </div>
-                       )
-                     })}
+              {/* Sidebar Controls */}
+              <div className="lg:col-span-1 space-y-6">
+                <div className="bg-white/90 backdrop-blur p-5 rounded-xl border border-white shadow-lg">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="font-bold text-slate-800">Settings</h3>
+                    <button onClick={() => setRawData(null)} className="text-xs text-red-500 hover:underline font-semibold">New Analysis</button>
                   </div>
+                  
+                  <div className="space-y-5">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wide">Input Granularity</label>
+                      <select 
+                        value={granularity}
+                        onChange={(e) => setGranularity(e.target.value as TimeGranularity)}
+                        className="w-full p-2.5 text-sm bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow"
+                      >
+                        {Object.values(TimeGranularity).map(g => (
+                          <option key={g} value={g}>{g}</option>
+                        ))}
+                      </select>
+                    </div>
 
-                  {/* Gemini Integration */}
-                  <GeminiReport result={result} distribution={distribution} />
-                </>
-              ) : (
-                <div className="h-64 flex items-center justify-center bg-white rounded-xl border border-slate-200 text-slate-400">
-                  Configure columns to generate analysis
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wide">Statistical Model</label>
+                      <select 
+                        value={distribution}
+                        onChange={(e) => setDistribution(e.target.value as DistributionType)}
+                        className="w-full p-2.5 text-sm bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow"
+                      >
+                        {Object.values(DistributionType).map(d => (
+                          <option key={d} value={d}>{d}</option>
+                        ))}
+                      </select>
+                      <p className="text-[10px] text-slate-400 mt-1 px-1">
+                        Select the distribution that best fits your regional data.
+                      </p>
+                    </div>
+
+                    <div className="pt-4 border-t border-slate-100">
+                      <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wide">Map Columns</label>
+                      <div className="space-y-3">
+                        <div>
+                          <span className="text-xs text-slate-400 block mb-1">Date/Year Column</span>
+                          <select 
+                            value={dateCol}
+                            onChange={(e) => setDateCol(e.target.value)}
+                            className="w-full p-2 text-sm bg-slate-50 border border-slate-300 rounded-lg"
+                          >
+                            <option value="">Select...</option>
+                            {headers.map(h => <option key={h} value={h}>{h}</option>)}
+                          </select>
+                        </div>
+
+                        <div>
+                          <span className="text-xs text-slate-400 block mb-1">Flow/Value Column</span>
+                          <select 
+                            value={valCol}
+                            onChange={(e) => setValCol(e.target.value)}
+                            className="w-full p-2 text-sm bg-slate-50 border border-slate-300 rounded-lg"
+                          >
+                            <option value="">Select...</option>
+                            {headers.map(h => <option key={h} value={h}>{h}</option>)}
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              )}
-            </div>
 
-          </div>
-        )}
-      </main>
+                {/* Quick Stats */}
+                {result && (
+                  <div className="bg-white/90 backdrop-blur p-5 rounded-xl border border-white shadow-lg">
+                    <h3 className="font-bold text-slate-800 mb-3 border-b border-slate-100 pb-2">Statistics</h3>
+                    <div className="space-y-3 text-sm">
+                      <div className="flex justify-between items-center">
+                        <span className="text-slate-500">N (Years)</span>
+                        <span className="font-mono bg-slate-100 px-2 rounded text-slate-700">{result.stats.n}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-slate-500">Mean</span>
+                        <span className="font-mono text-slate-700">{result.stats.mean.toFixed(1)}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-slate-500">Std Dev</span>
+                        <span className="font-mono text-slate-700">{result.stats.stdDev.toFixed(1)}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-slate-500">Skewness</span>
+                        <span className="font-mono text-slate-700">{result.stats.skew.toFixed(3)}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Main Content Area */}
+              <div className="lg:col-span-3 space-y-6">
+                
+                {/* Visualization */}
+                {result ? (
+                  <>
+                    <div className="bg-white/95 backdrop-blur rounded-xl shadow-lg border border-white/50 overflow-hidden">
+                       <FloodFrequencyChart result={result} distributionType={distribution} />
+                    </div>
+                    
+                    {/* Results Table */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                       {[10, 50, 100, 500].map(ari => {
+                         const key = `q${ari}` as keyof typeof result.predictions;
+                         return (
+                           <div key={ari} className="bg-white/90 backdrop-blur p-4 rounded-xl border border-white shadow-md text-center transform transition hover:scale-105">
+                             <div className="text-xs text-slate-500 uppercase font-bold tracking-wider">{ari}-Year Event</div>
+                             <div className="text-2xl font-bold text-blue-700 mt-1">{result.predictions[key].toFixed(1)}</div>
+                             <div className="text-xs text-slate-400 mt-1">m³/s</div>
+                           </div>
+                         )
+                       })}
+                    </div>
+
+                    {/* Gemini Integration */}
+                    <GeminiReport result={result} distribution={distribution} />
+                  </>
+                ) : (
+                  <div className="h-64 flex flex-col items-center justify-center bg-white/50 backdrop-blur rounded-xl border-2 border-dashed border-slate-300 text-slate-500">
+                    <svg className="w-12 h-12 mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                    <span>Upload data and map columns to view analysis</span>
+                  </div>
+                )}
+              </div>
+
+            </div>
+          )}
+        </main>
+      </div>
     </div>
   );
 };
