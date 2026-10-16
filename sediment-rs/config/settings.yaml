@@ -1,0 +1,72 @@
+# Sri Lanka river sediment remote-sensing pipeline -- configuration
+#
+# !! Station coordinates are APPROXIMATE (town / gauge locations). Always run
+# !! `python scripts/00_snap_stations.py` first: it moves each point onto the
+# !! nearest permanent-water pixel and reports how far it moved. Then check
+# !! every station visually with gee_js/explore.js before extracting data.
+
+gee_project: "YOUR-GCP-PROJECT-ID"     # earthengine-api needs a Cloud project
+drive_folder: "sediment_rs_exports"   # Google Drive folder for Export.table
+
+period:
+  # Landsat-8 starts 2013; Sentinel-2 L2A (Sen2Cor) is systematic globally only
+  # from ~Dec 2018, so S2 rows before 2019 will be sparse over Sri Lanka.
+  start: "2013-04-01"
+  end:   "2026-10-01"
+
+sensors: ["S2", "L8", "L9"]
+
+masking:
+  cs_plus_threshold: 0.60       # Cloud Score+ cs_cdf; 0.50-0.65 recommended by GEE catalog
+  jrc_occurrence_min: 50        # % of JRC GSW observations that were water (Pekel et al. 2016)
+  erode_m: 30                   # 1 JRC pixel inward from the bank (adjacency / mixed pixels)
+  swir_max: 0.0215              # ACOLITE default non-water threshold at 1600 nm
+  min_pixels: 10                # minimum valid water pixels (20 m) per station-image
+  min_valid_fraction: 0.5       # valid / potential water pixels in the AOI
+
+station_buffer_m: 500
+snap_search_m: 2000
+
+# role: main / upstream / downstream / mouth ; zone: wet / intermediate / dry
+stations:
+  - {id: kelani_kitulgala,     river: Kelani,  lat: 6.9893, lon: 80.4172, zone: wet,  role: upstream}
+  - {id: kelani_hanwella,      river: Kelani,  lat: 6.9105, lon: 80.0820, zone: wet,  role: main}
+  - {id: kelani_colombo,       river: Kelani,  lat: 6.9600, lon: 79.8800, zone: wet,  role: mouth}
+  - {id: kalu_ratnapura,       river: Kalu,    lat: 6.6850, lon: 80.3990, zone: wet,  role: upstream}
+  - {id: kalu_ellagawa,        river: Kalu,    lat: 6.7300, lon: 80.2150, zone: wet,  role: main}
+  - {id: kalu_putupaula,       river: Kalu,    lat: 6.6100, lon: 80.0500, zone: wet,  role: mouth}
+  - {id: gin_baddegama,        river: Gin,     lat: 6.1700, lon: 80.1800, zone: wet,  role: main}
+  - {id: gin_gintota,          river: Gin,     lat: 6.0700, lon: 80.1650, zone: wet,  role: mouth}
+  - {id: nilwala_matara,       river: Nilwala, lat: 5.9550, lon: 80.5380, zone: wet,  role: mouth}
+  - {id: mahaweli_peradeniya,  river: Mahaweli, lat: 7.2650, lon: 80.5950, zone: intermediate, role: upstream}
+  - {id: mahaweli_mahiyangana, river: Mahaweli, lat: 7.3230, lon: 80.9900, zone: dry,  role: main}
+  - {id: mahaweli_manampitiya, river: Mahaweli, lat: 7.9150, lon: 81.0900, zone: dry,  role: main}
+  - {id: mahaweli_somawathiya, river: Mahaweli, lat: 8.1300, lon: 81.1700, zone: dry,  role: mouth}
+  - {id: walawe_embilipitiya,  river: Walawe,  lat: 6.3300, lon: 80.8500, zone: dry,  role: main}
+  - {id: walawe_ambalantota,   river: Walawe,  lat: 6.1200, lon: 81.0250, zone: dry,  role: mouth}
+  - {id: deduru_chilaw,        river: Deduru,  lat: 7.6080, lon: 79.8350, zone: intermediate, role: mouth}
+  - {id: mahaoya_badalgama,    river: MahaOya, lat: 7.2900, lon: 79.9800, zone: wet,  role: mouth}
+
+# Upstream -> downstream pairs separated by reservoirs (sediment-trapping check).
+dam_pairs:
+  - {up: mahaweli_peradeniya, down: mahaweli_mahiyangana,
+     note: "Victoria-Randenigala-Rantembe cascade; Uma Oya/Badulu Oya join in between"}
+
+# National reach atlas (scripts 02/03)
+reaches:
+  river_network: "WWF/HydroSHEDS/v1/FreeFlowingRivers"
+  bbox: [79.5, 5.85, 81.95, 9.9]          # lon_min, lat_min, lon_max, lat_max
+  min_upland_km2: 300                     # keep rivers draining > 300 km2
+  segment_km: 1.0
+  buffer_m: 400                           # HydroSHEDS lines are ~500 m resolution
+  lentic_water_fraction: 0.5              # water share of buffer above which a reach is a lake/reservoir
+
+rainfall:
+  dataset: "UCSB-CHG/CHIRPS/DAILY"        # alternative: NASA/GPM_L3/IMERG_V07 (half-hourly)
+  basins: "WWF/HydroSHEDS/v1/Basins/hybas_8"
+  windows_days: [1, 3, 7, 14]
+
+hotspots:
+  upstream_window: 3      # reaches used as the upstream reference
+  jump_ratio: 2.0         # downstream / upstream median (doubling, cf. Dethier et al. 2023)
+  min_years: 2            # must recur in >= this many years
