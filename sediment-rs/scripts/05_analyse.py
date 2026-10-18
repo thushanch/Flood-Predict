@@ -24,6 +24,9 @@ from sedrs.config import DATA_DIR, OUT_DIR, load_settings  # noqa: E402
 ap = argparse.ArgumentParser()
 ap.add_argument("--data", type=Path, default=DATA_DIR)
 ap.add_argument("--out", type=Path, default=OUT_DIR)
+ap.add_argument("--primary", default="SPM_blend",
+                help="SPM product analysed as the primary variable (e.g. SPM_red for narrow, "
+                     "NIR-contaminated channels)")
 args = ap.parse_args()
 
 cfg = load_settings()
@@ -31,11 +34,17 @@ m = cfg["masking"]
 fig_dir = args.out / "figures"
 fig_dir.mkdir(parents=True, exist_ok=True)
 summary = ["# Sediment signal analysis summary", ""]
+if args.primary != "SPM_blend":
+    summary += [f"Primary SPM product: **{args.primary}** (tables labelled SPM refer to it).", ""]
 
 # ---------------------------------------------------------------- stations
 raw = qc.load_station_csvs(sorted((args.data / "stations").glob("*.csv")))
 pot_path = args.data / "potential_pixels.json"
 pot = json.loads(pot_path.read_text()) if pot_path.exists() else None
+if args.primary != "SPM_blend":
+    # the analysis functions read SPM_blend_*; point them at the chosen product
+    for q in ("p25", "p50", "p75"):
+        raw[f"SPM_blend_{q}"] = raw[f"{args.primary}_{q}"]
 df = qc.clean(raw, pot, min_pixels=m["min_pixels"], min_valid_fraction=m["min_valid_fraction"])
 df.to_csv(args.out / "stations_clean.csv", index=False)
 summary += [f"Station-image rows: {len(raw)} raw -> {len(df)} after QC "

@@ -26,6 +26,11 @@ from sedrs.seasons import SEASONS, season_of  # noqa: E402
 
 CELL = 50
 NCOL = s2grid.W // CELL + 1
+# Primary product: red-band Nechad SPM. In these narrow channels the NIR band
+# carries strong bank-vegetation adjacency signal (Kelani: rho_nir ~0.038 where
+# red-band SPM is ~20 g m-3), so NIR-based and red/NIR-blended estimates are
+# biased high. The blend is kept as an upper bound (spm_blend_all).
+PRIMARY = "SPM_red"
 MIN_PX = 3            # valid 20 m pixels per cell-scene
 MIN_SCENES = 3        # scenes per cell-season to report a median
 
@@ -43,13 +48,18 @@ cells = (cells[cells["n"] >= MIN_PX].sort_values("n", ascending=False)
 cells["season"] = season_of(cells["date"]).values
 print(f"{len(files)} scenes, {len(cells)} cell-observations, {cells['cell'].nunique()} river cells")
 
+from sedrs import algorithms as alg  # noqa: E402
+
+D = alg.DOGLIOTTI
+cells["T_red"] = alg.nechad(cells["red"], D["A_red"], D["C_red"])     # Dogliotti red-band turbidity
 g = cells.groupby(["cell", "season"])
-tab = g["SPM_blend"].median().unstack().reindex(columns=SEASONS)
+tab = g[PRIMARY].median().unstack().reindex(columns=SEASONS)
 cnt = g.size().unstack().reindex(columns=SEASONS).fillna(0).astype(int)
 tab = tab.where(cnt >= MIN_SCENES)
-allm = cells.groupby("cell").agg(spm_all=("SPM_blend", "median"), turb_all=("T_dog", "median"),
+allm = cells.groupby("cell").agg(spm_all=(PRIMARY, "median"), turb_all=("T_red", "median"),
                                  ndti_all=("ndti", "median"), n_scenes=("date", "nunique"),
-                                 px_median=("n", "median"))
+                                 spm_blend_all=("SPM_blend", "median"), red_all=("red", "median"),
+                                 nir_all=("nir", "median"), px_median=("n", "median"))
 res = allm.join(tab.add_prefix("spm_")).join(cnt.add_prefix("n_"))
 row, col = res.index // NCOL, res.index % NCOL
 x = s2grid.X0 + (col + 0.5) * CELL * s2grid.RES
@@ -99,21 +109,21 @@ def basemap(ax):
 
 
 norm = LogNorm(vmin=2, vmax=200)
-fig, axes = plt.subplots(1, 4, figsize=(16, 7.2))
+fig, axes = plt.subplots(1, 4, figsize=(15, 5.6), layout="constrained")
 for ax, s in zip(axes, SEASONS):
     basemap(ax)
     v = res[f"spm_{s}"]
     ok = v.notna()
     sc = ax.scatter(res.loc[ok, "lon"], res.loc[ok, "lat"], c=v[ok], s=4, cmap="YlOrBr", norm=norm, lw=0)
     ax.set_title(f"{s}  ({ok.sum()} cells)", fontsize=10)
-fig.colorbar(sc, ax=axes, shrink=0.6, label="Estimated SPM (g m$^{-3}$), median of scenes")
-fig.suptitle("Sentinel-2 river sediment signal by monsoon season (1 km river cells)", fontsize=12)
+fig.colorbar(sc, ax=axes, shrink=0.6, label="Estimated SPM, red band (g m$^{-3}$), median of scenes")
+fig.suptitle("Sentinel-2 river sediment signal by monsoon season, 2024–2025 (1 km river cells)", fontsize=12)
 fig.savefig(fig_dir / "map_spm_by_season.png", dpi=180, bbox_inches="tight")
 plt.close(fig)
 
-fig, axes = plt.subplots(1, 3, figsize=(13, 7.2))
+fig, axes = plt.subplots(1, 3, figsize=(13, 5.8), layout="constrained")
 for ax, (var, lab, nrm, cmap) in zip(axes, [
-        ("spm_all", "Estimated SPM, all seasons (g m$^{-3}$)", norm, "YlOrBr"),
+        ("spm_all", "Estimated SPM (red band), all seasons (g m$^{-3}$)", norm, "YlOrBr"),
         ("ndti_all", "NDTI (calibration-free)", plt.Normalize(-0.25, 0.25), "RdYlBu_r"),
         ("n_scenes", "Clear-sky scenes per cell", plt.Normalize(0, res["n_scenes"].quantile(0.95)), "viridis")]):
     basemap(ax)

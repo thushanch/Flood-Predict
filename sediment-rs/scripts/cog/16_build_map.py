@@ -19,13 +19,15 @@ from sedrs.seasons import season_of  # noqa: E402
 HERE = Path(__file__).resolve().parent
 cfg = load_settings()
 cells = pd.read_csv(OUT_DIR / "cog" / "river_cells.csv")
-st = pd.read_csv(DATA_DIR / "cog_analysis" / "stations" / "stations_S2.csv", parse_dates=["date"])
-scenes = sum(1 for _ in (DATA_DIR / "cog" / "cells").glob("*.csv"))
+# QC'd and de-duplicated by scripts/05_analyse.py (one row per station-day)
+st = pd.read_csv(OUT_DIR / "cog_stations" / "stations_clean.csv", parse_dates=["date"])
+scenes = sum(1 for _ in (DATA_DIR / "cog" / "stations").glob("*.csv"))     # every processed scene
 sinfo = pd.read_csv(DATA_DIR / "cog" / "stations.csv").set_index("id")
 extra_path = HERE / "findings_extra.json"
 extra = json.loads(extra_path.read_text()) if extra_path.exists() else {}
 
 SEAS = ["NEM", "FIM", "SWM", "SIM"]
+PRIMARY = "SPM_red_p50"       # red-band SPM (NIR is adjacency-contaminated in these channels)
 LABEL = {
     "kelani_hanwella": "Kelani · Hanwella", "kelani_colombo": "Kelani · Colombo",
     "kalu_putupaula": "Kalu · Putupaula", "gin_baddegama": "Gin · Baddegama", "gin_gintota": "Gin · Gintota",
@@ -48,8 +50,8 @@ stations = []
 for sid, g in st.groupby("station"):
     if len(g) < 10:
         continue
-    seas = g.groupby("season")["SPM_blend_p50"].agg(["median", "count"])
-    m = g.groupby(g["date"].dt.month)["SPM_blend_p50"].agg(["median", "count"])
+    seas = g.groupby("season")[PRIMARY].agg(["median", "count"])
+    m = g.groupby(g["date"].dt.month)[PRIMARY].agg(["median", "count"])
     monthly = [r(m.loc[k, "median"]) if k in m.index and m.loc[k, "count"] >= 3 else None for k in range(1, 13)]
     sv = {k: (r(seas.loc[k, "median"]) if k in seas.index and seas.loc[k, "count"] >= 3 else None) for k in SEAS}
     known = {k: v for k, v in sv.items() if v}
@@ -61,8 +63,11 @@ for sid, g in st.groupby("station"):
     info = sinfo.loc[sid]
     stations.append({"id": sid, "label": LABEL.get(sid, sid), "river": info["river"], "zone": info["zone"],
                      "lon": float(info["lon"]), "lat": float(info["lat"]), "n": int(len(g)),
-                     "all": r(g["SPM_blend_p50"].median()), "seasons": sv, "monthly": monthly,
+                     "all": r(g[PRIMARY].median()), "seasons": sv, "monthly": monthly,
                      "note": note + extra.get("station_notes", {}).get(sid, "")})
+LABEL_DY = {"kelani_colombo": -12, "mahaweli_peradeniya": 8, "mahaoya_badalgama": -6}
+for s_ in stations:
+    s_["label_dy"] = LABEL_DY.get(s_["id"], 0)
 stations.sort(key=lambda s: (-s["lat"]))
 
 # ---------------------------------------------------------------- cells
@@ -85,17 +90,20 @@ stats = [
     {"value": f"{np.median(cells['spm_all']):.0f}", "label": "median SPM, g m⁻³"},
     {"value": f"{max(seas_med.values()) / min(seas_med.values()):.1f}×", "label": "wettest / clearest season"},
 ]
+stats = extra.get("stats", stats)
 hi_s, lo_s = max(seas_med, key=seas_med.get), min(seas_med, key=seas_med.get)
-findings = [
+auto_findings = [
     f"Across {len(both):,} river cells seen in all four seasons, the sediment signal peaks in <b>{hi_s}</b> "
     f"(median {seas_med[hi_s]:.0f} g m⁻³) and is lowest in <b>{lo_s}</b> ({seas_med[lo_s]:.0f} g m⁻³). "
     + " · ".join(f"{k} {v:.0f}" for k, v in seas_med.items()) + ".",
 ]
 if wet and dry:
-    findings.append(f"Wet-zone stations have a median of <b>{np.median([s['all'] for s in wet]):.0f}</b> g m⁻³ "
+    auto_findings.append(f"Wet-zone stations have a median of <b>{np.median([s['all'] for s in wet]):.0f}</b> g m⁻³ "
                     f"against <b>{np.median([s['all'] for s in dry]):.0f}</b> g m⁻³ at dry-zone stations "
                     f"({len(wet)} and {len(dry)} stations).")
-findings += extra.get("findings", [])
+# hand-written findings (checked against the numbers above) replace the auto text when present
+findings = extra.get("findings") or auto_findings
+print("auto findings for reference:\n  " + "\n  ".join(auto_findings))
 
 meta = {
     "period": extra.get("period", "2024–2025"),

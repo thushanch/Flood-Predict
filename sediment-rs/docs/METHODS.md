@@ -161,6 +161,21 @@ access and masking differ:
 | Pixel purity | eroded JRC mask | per scene: MNDWI > 0.1, NDVI < 0.1, ρ(SWIR-1) < 0.04 |
 | Mapping unit | 1 km reaches | 1 km × 1 km UTM cells (median of valid pixels per scene; median of scenes per season) |
 
+**Primary product: red-band SPM.** In the first national run, NIR reflectance
+over the lower Kelani was about 0.038 where red-band SPM was about
+20 g m⁻³; water that clear should be near 0.005–0.01 in NIR. The excess is
+adjacency signal from bright vegetated banks in 20 m pixels of 60–200 m wide
+channels. Because the Dogliotti/Nechad switching hands over to the NIR band
+once ρ(red) > 0.05, the blended product was biased high wherever red
+reflectance was moderate (lower Mahaweli: blended ~115 vs red-band ~38 g m⁻³).
+The COG run therefore reports **red-band Nechad SPM** and **red-band
+Dogliotti turbidity** as primary products and keeps the blend as an upper
+bound. Red-band SPM loses sensitivity as ρ(red) approaches C (0.196): cells
+with median ρ(red) > 0.10 (the lower Kalu) are likely underestimated. For a
+paper, an adjacency correction (e.g. ACOLITE with adjacency handling, or a
+SWIR-based NIR correction) is needed before the NIR branch can be used on
+these rivers.
+
 Stations use a 500 m radius around the nearest channel pixel, with the same
 QC as §3 (≥ 10 valid pixels and ≥ 50 % of the station's channel pixels clear).
 

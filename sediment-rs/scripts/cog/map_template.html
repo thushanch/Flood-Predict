@@ -58,6 +58,8 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
 .ticks { display: flex; justify-content: space-between; font: 11px var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
 .season-note { font-size: 13px; color: var(--muted); margin: 8px 0 0; }
 aside { display: grid; gap: 22px; min-width: 0; }
+aside > section { min-width: 0; }
+.plate > * { min-width: 0; }
 h2 { font-family: var(--display); font-stretch: 85%; font-weight: 700; font-size: 21px; margin: 0 0 8px; text-wrap: balance; }
 .stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 2px solid var(--ink); border-bottom: 1px solid var(--rule); }
 .stats div { padding: 10px 8px 9px 0; display: grid; gap: 2px; }
@@ -144,8 +146,8 @@ const SEASONS = ["ALL", "NEM", "FIM", "SWM", "SIM"];
 const SEASON_NAME = { ALL: "All seasons", NEM: "Northeast monsoon (Dec-Feb)", FIM: "First inter-monsoon (Mar-Apr)",
   SWM: "Southwest monsoon (May-Sep)", SIM: "Second inter-monsoon (Oct-Nov)" };
 const VARS = {
-  spm:  { label: "SPM", unit: "g m⁻³", log: true,  lo: 2, hi: 200, fmt: v => v.toFixed(v < 10 ? 1 : 0) },
-  turb: { label: "Turbidity", unit: "FNU", log: true, lo: 2, hi: 200, fmt: v => v.toFixed(v < 10 ? 1 : 0) },
+  spm:  { label: "SPM", unit: "g m⁻³", log: true,  lo: 3, hi: 150, fmt: v => v.toFixed(v < 10 ? 1 : 0) },
+  turb: { label: "Turbidity", unit: "FNU", log: true, lo: 3, hi: 150, fmt: v => v.toFixed(v < 10 ? 1 : 0) },
   ndti: { label: "NDTI", unit: "", log: false, lo: -0.25, hi: 0.25, fmt: v => v.toFixed(2) },
 };
 // clear water -> silty -> lateritic; reads on both grounds
@@ -216,7 +218,8 @@ function draw() {
       const label = s.label;
       const right = x < W * 0.6;
       ctx.textAlign = right ? "left" : "right";
-      ctx.fillText(label, x + (right ? 8 : -8), y + 4);
+      const dy = s.label_dy || 0;                    // nudge labels that collide with a neighbour
+      ctx.fillText(label, x + (right ? 8 : -8), y + 4 + dy);
     }
   }
   ctx.textAlign = "left";
@@ -283,7 +286,7 @@ function refresh() {
     () => variable, k => { variable = k; if (k !== "spm") season = "ALL"; });
   const v = VARS[variable];
   $("ramp").style.background = `linear-gradient(90deg, ${RAMP.join(",")})`;
-  const ticks = v.log ? [v.lo, 5, 10, 20, 50, 100, v.hi] : [-0.25, -0.1, 0, 0.1, 0.25];
+  const ticks = v.log ? [3, 5, 10, 20, 50, 100, 150] : [-0.25, -0.1, 0, 0.1, 0.25];
   $("ticks").innerHTML = ticks.map(t => `<span>${t}</span>`).join("");
   const shown = DATA.cells.lon.filter((_, i) => cellValue(i) != null).length;
   $("seasonNote").textContent = `${SEASON_NAME[season]} · ${v.label}${v.unit ? " (" + v.unit + ")" : ""} · ${shown.toLocaleString()} river cells (1 km) · median of clear scenes, ${DATA.meta.period}` +
@@ -296,7 +299,7 @@ const fmt1 = v => v == null ? "–" : (v < 10 ? v.toFixed(1) : Math.round(v).toS
 function renderTable() {
   const rows = DATA.stations.map(s => {
     const val = season === "ALL" ? s.all : s.seasons[season];
-    const sw = val == null ? "transparent" : colorAt((Math.log(val) - Math.log(2)) / (Math.log(200) - Math.log(2)));
+    const sw = val == null ? "transparent" : colorAt((Math.log(val) - Math.log(3)) / (Math.log(150) - Math.log(3)));
     return `<tr data-id="${s.id}" class="${selected === s.id ? "sel" : ""}"><td><span class="sw" style="background:${sw}"></span>${s.label} <span class="zone">${s.zone}</span></td>` +
       ["NEM", "FIM", "SWM", "SIM"].map(k => `<td>${fmt1(s.seasons[k])}</td>`).join("") + `<td>${s.n}</td></tr>`;
   }).join("");
@@ -320,7 +323,7 @@ function select(id) {
   for (const g of gridV) svg += `<line x1="${m.l}" x2="${w - m.r}" y1="${y(g)}" y2="${y(g)}" stroke="var(--rule)"/><text x="${m.l - 6}" y="${y(g) + 4}" text-anchor="end" font-size="10" font-family="IBM Plex Mono, monospace" fill="var(--muted)">${g}</text>`;
   vals.forEach((v, i) => {
     if (v == null) return;
-    const t = (Math.log(v) - Math.log(2)) / (Math.log(200) - Math.log(2));
+    const t = (Math.log(v) - Math.log(3)) / (Math.log(150) - Math.log(3));
     svg += `<rect x="${x(i) - bw / 2}" y="${y(v)}" width="${bw}" height="${h - m.b - y(v)}" fill="${colorAt(t)}"/>`;
   });
   "JFMAMJJASOND".split("").forEach((c, i) => svg += `<text x="${x(i)}" y="${h - 8}" text-anchor="middle" font-size="10" font-family="IBM Plex Mono, monospace" fill="var(--muted)">${c}</text>`);
