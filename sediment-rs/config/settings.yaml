@@ -20,7 +20,7 @@ masking:
   cs_plus_threshold: 0.60       # Cloud Score+ cs_cdf; 0.50-0.65 recommended by GEE catalog
   jrc_occurrence_min: 50        # % of JRC GSW observations that were water (Pekel et al. 2016)
   erode_m: 30                   # 1 JRC pixel inward from the bank (adjacency / mixed pixels)
-  swir_max: 0.0215              # ACOLITE default non-water threshold at 1600 nm
+  swir_max: 0.04                # Sen2Cor BOA SWIR-1 limit (ACOLITE's TOA default 0.0215 rejects most river pixels; see algorithms.py)
   min_pixels: 10                # minimum valid water pixels (20 m) per station-image
   min_valid_fraction: 0.5       # valid / potential water pixels in the AOI
 

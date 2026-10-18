@@ -55,7 +55,12 @@ the record to 2013.
      removes mixed land–water pixels and reduces the adjacency effect, which
      ACIX-Aqua names as a key error source for small water bodies;
   3. MNDWI > 0 on that date (Xu 2006), which removes exposed sand bars;
-  4. ρ(SWIR-1, ~1610 nm) < 0.0215, the ACOLITE default non-water threshold;
+  4. ρ(SWIR-1, ~1610 nm) < 0.04. ACOLITE's default non-water threshold is
+     0.0215, but it is defined on ACOLITE's own top-of-atmosphere reflectance.
+     On Sen2Cor surface reflectance, narrow rivers carry 0.02–0.03 of SWIR
+     adjacency signal from bright banks. In a test on 29 clear scenes
+     (Kelani, Kalu, Mahaweli, 2024–25), 0.04 kept 2–10× more river pixels and
+     changed median SPM by only a few percent;
   5. ρ(red) > 0 and ρ(green) > 0.
 * **Station areas.** 500 m radius around each station after snapping it to the
   nearest stable-water pixel. An image is used only if it has ≥ 10 valid water
@@ -141,7 +146,25 @@ concentrations are right-skewed and changes are multiplicative.
    readings on Sentinel-2 overpass days. Even a few points turn check 6 into a
    real error estimate.
 
-## 7. Known limitations (state them in the paper)
+## 7. No-account pathway: public Sentinel-2 COGs (`scripts/cog/`)
+
+Used for the first national run (2024–2025 map, 2019–2025 stations), when
+Earth Engine is not available. Same algorithms (`sedrs/algorithms.py`); data
+access and masking differ:
+
+| Step | GEE pathway | COG pathway |
+|---|---|---|
+| Imagery | `COPERNICUS/S2_SR_HARMONIZED` | Sen2Cor L2A COGs, AWS Open Data `sentinel-cogs` bucket, listed with S3 ListObjects (18,903 scenes 2019–2025, 17 MGRS tiles) |
+| Scaling | DN / 10000 (harmonized) | DN / 10000: the `-0.1` offset in item metadata is already applied (`earthsearch:boa_offset_applied`); verified on tile 44NLN where land DN match across baselines 02.14 and 05.1 |
+| Clouds | Cloud Score+ | Sen2Cor SCL: classes 0, 1, 3, 8, 9, 10 and 11 masked |
+| River corridor | JRC occurrence, HydroSHEDS reaches | 20 m channel mask from (a) strict Sentinel-2 water frequency (MNDWI > 0, NDVI < 0, NIR < 0.12 on ~12 clearest scenes per tile) near JRC water, and (b) JRC occurrence ≥ 50 %, each filtered for long, narrow shapes (width < ~280 m, skeleton ≥ 2 km, length/√area ≥ 4) and kept ≥ 600 m inside the coastline |
+| Pixel purity | eroded JRC mask | per scene: MNDWI > 0.1, NDVI < 0.1, ρ(SWIR-1) < 0.04 |
+| Mapping unit | 1 km reaches | 1 km × 1 km UTM cells (median of valid pixels per scene; median of scenes per season) |
+
+Stations use a 500 m radius around the nearest channel pixel, with the same
+QC as §3 (≥ 10 valid pixels and ≥ 50 % of the station's channel pixels clear).
+
+## 8. Known limitations (state them in the paper)
 
 * **Mineralogy.** Mineral absorption varies with iron-oxide content (Babin &
   Stramski 2004). Sri Lanka's lateritic soils may shift the red-band SPM

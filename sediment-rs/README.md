@@ -30,6 +30,24 @@ python scripts/03_extract_reaches.py    # seasonal composites -> Drive -> data/r
 python scripts/05_analyse.py
 ```
 
+### No Earth Engine account? Public-archive pathway (`scripts/cog/`)
+
+Reads Sentinel-2 Cloud-Optimized GeoTIFFs straight from AWS Open Data and
+JRC water from Google Cloud Storage. This is how the first national map was
+made.
+
+```bash
+python scripts/cog/10_river_mask.py          # JRC occurrence for Sri Lanka
+python scripts/cog/11_list_scenes.py 2019 2025   # ~19k scenes, ~15 min
+python scripts/cog/12_water_frequency.py 12  # clearest 12 scenes/tile -> 20 m water frequency
+python scripts/cog/13_river_network.py       # channel mask + station snapping
+# per-scene retrieval; run 4 shards in parallel (resumable)
+for i in 0 1 2 3; do python scripts/cog/14_extract.py --shard $i/4 --workers 4 & done; wait
+python scripts/cog/15_aggregate.py           # 1 km river cells, maps, station table
+python scripts/05_analyse.py --data data/cog_analysis --out outputs/cog_stations
+python scripts/cog/16_build_map.py           # interactive atlas HTML
+```
+
 ### Offline demo (no GEE needed)
 
 ```bash

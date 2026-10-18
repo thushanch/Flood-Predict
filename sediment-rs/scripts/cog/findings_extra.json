@@ -1,0 +1,17 @@
+{
+  "period": "2024–2025",
+  "station_period": "2019–2025",
+  "default_station": "kelani_hanwella",
+  "lede": "Every clear Sentinel-2 view of Sri Lanka's main river channels in 2024–2025, turned into an estimated suspended-sediment signal for each kilometre of river. Switch seasons to see the monsoons arrive; pick a station to see its year.",
+  "how": "River channels were mapped from Sentinel-2 water frequency (strict MNDWI, NDVI and NIR water test on the clearest scenes) combined with JRC Global Surface Water, keeping long, narrow water bodies and dropping tanks, reservoirs, lagoons and the coast. For every scene with up to 70 % cloud, clear river pixels (Sen2Cor scene classification; pure-water spectral checks) were converted to suspended particulate matter (SPM) with the Nechad red/NIR algorithm and to turbidity with Dogliotti (2015), using the switching scheme and coefficients published with ACOLITE. Each 1 km cell shows the median over all clear scenes in the selected season.",
+  "caveats": [
+    "SPM values are uncalibrated estimates from published algorithms; no Sri Lankan field samples were used. Compare places and seasons, and treat absolute g m⁻³ as indicative only (likely within a factor of about 2).",
+    "Only channels wider than about 60 m are resolved, so upper catchments and small rivers are missing.",
+    "Cloud removes most southwest-monsoon views in the wet zone; seasonal medians there rest on fewer scenes (see the Scenes column).",
+    "Atmospheric correction is the land-oriented Sen2Cor product; some cells near the coast are lagoon or estuary reaches rather than rivers.",
+    "No rainfall or discharge data are included yet, so the rainfall-response and rating-curve checks are still to be run with gauge data."
+  ],
+  "repro": "Code: <span class=\"mono\">sediment-rs/scripts/cog/10–16</span> in the Flood-Predict repository. It reads public Sentinel-2 Cloud-Optimized GeoTIFFs (AWS Open Data) and JRC water data directly, so no Earth Engine account is needed. Coefficients and references are in <span class=\"mono\">docs/METHODS.md</span>.",
+  "findings": [],
+  "station_notes": {}
+}

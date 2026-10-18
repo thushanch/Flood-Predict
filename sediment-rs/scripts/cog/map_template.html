@@ -1,0 +1,353 @@
+<title>Sri Lanka River Sediment Atlas</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,500..800&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: survey sheet - map plate on the left, legend + findings ledger on the right; stacks on phones */
+:root {
+  --paper: #f1f4f3;
+  --plate: #fbfcfc;
+  --ink: #16242a;
+  --muted: #5a6a70;
+  --rule: #cdd7d5;
+  --land: #e2e8e5;
+  --coast: #8fa19d;
+  --accent: #a8461f;      /* laterite */
+  --water: #24707f;
+  --focus: #0f5f9c;
+  --display: "Archivo", "Arial Narrow", system-ui, sans-serif;
+  --body: "Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0e1517; --plate: #131d20; --ink: #e2eae8; --muted: #93a4a8; --rule: #2a3a3e;
+    --land: #1c2a2d; --coast: #4d6266; --accent: #e07a4b; --water: #5fb3c2; --focus: #7cc0f0;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0e1517; --plate: #131d20; --ink: #e2eae8; --muted: #93a4a8; --rule: #2a3a3e;
+  --land: #1c2a2d; --coast: #4d6266; --accent: #e07a4b; --water: #5fb3c2; --focus: #7cc0f0;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--paper); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.55; }
+.wrap { max-width: 1240px; margin: 0 auto; padding-block: 28px 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+header { display: grid; gap: 6px; margin-bottom: 18px; }
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+h1 { font-family: var(--display); font-stretch: 80%; font-weight: 800; font-size: clamp(30px, 4.4vw, 50px); line-height: 1.02; margin: 0; text-wrap: balance; letter-spacing: -.01em; }
+.lede { max-width: 68ch; color: var(--muted); margin: 4px 0 0; }
+.sheet { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 22px; align-items: start; }
+@media (max-width: 860px) { .sheet { grid-template-columns: minmax(0, 1fr); } }
+.plate { background: var(--plate); border: 1px solid var(--rule); border-radius: 6px; padding: 14px; min-width: 0; }
+.controls { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; margin-bottom: 10px; }
+.seg { display: inline-flex; border: 1px solid var(--rule); border-radius: 5px; overflow: hidden; }
+.seg button { font: 500 13px/1 var(--body); color: var(--muted); background: transparent; border: 0; padding: 8px 11px; cursor: pointer; border-right: 1px solid var(--rule); }
+.seg button:last-child { border-right: 0; }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--plate); }
+.seg button:focus-visible, select:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.ctl-label { font-family: var(--mono); font-size: 11px; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); margin-right: 6px; }
+.map-box { position: relative; width: 100%; aspect-ratio: 0.64; max-width: 100%; }
+canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.tip { position: absolute; pointer-events: none; background: var(--ink); color: var(--plate); font: 12px/1.4 var(--mono); padding: 7px 9px; border-radius: 4px; white-space: nowrap; transform: translate(12px, -50%); }
+.legend { display: grid; gap: 6px; margin-top: 10px; }
+.ramp { height: 10px; border-radius: 2px; }
+.ticks { display: flex; justify-content: space-between; font: 11px var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+.season-note { font-size: 13px; color: var(--muted); margin: 8px 0 0; }
+aside { display: grid; gap: 22px; min-width: 0; }
+h2 { font-family: var(--display); font-stretch: 85%; font-weight: 700; font-size: 21px; margin: 0 0 8px; text-wrap: balance; }
+.stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 2px solid var(--ink); border-bottom: 1px solid var(--rule); }
+.stats div { padding: 10px 8px 9px 0; display: grid; gap: 2px; }
+.stats b { font: 600 22px/1.1 var(--mono); font-variant-numeric: tabular-nums; }
+.stats span { font-size: 12px; color: var(--muted); }
+@media (max-width: 480px) { .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+ol.findings { margin: 0; padding-left: 20px; display: grid; gap: 9px; }
+ol.findings li { padding-left: 2px; }
+ol.findings li::marker { font-family: var(--mono); color: var(--accent); }
+.tbl { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+th, td { text-align: right; padding: 6px 6px; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+th:first-child, td:first-child { text-align: left; }
+thead th { font: 500 11px var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--ink); }
+tbody tr { cursor: pointer; }
+tbody tr:hover, tbody tr.sel { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+td .sw { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 6px; vertical-align: 0; }
+.zone { font: 11px var(--mono); color: var(--muted); }
+.detail { border-top: 1px solid var(--rule); padding-top: 12px; }
+.detail svg { width: 100%; height: auto; display: block; }
+.methods { margin-top: 30px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; border-top: 2px solid var(--ink); padding-top: 16px; }
+@media (max-width: 860px) { .methods { grid-template-columns: minmax(0, 1fr); } }
+.methods h3 { font-family: var(--display); font-stretch: 85%; font-weight: 700; font-size: 16px; margin: 0 0 6px; }
+.methods p, .methods li { font-size: 13.5px; color: var(--muted); max-width: 62ch; }
+.methods ul { padding-left: 18px; margin: 0; display: grid; gap: 4px; }
+code, .mono { font-family: var(--mono); font-size: .92em; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow" id="eyebrow"></div>
+    <h1>What Sentinel-2 sees in Sri Lanka's rivers</h1>
+    <p class="lede" id="lede"></p>
+  </header>
+
+  <div class="sheet">
+    <section class="plate" aria-label="Map">
+      <div class="controls">
+        <div><span class="ctl-label">Season</span>
+          <div class="seg" id="seasonSeg" role="group" aria-label="Season"></div></div>
+        <div><span class="ctl-label">Layer</span>
+          <div class="seg" id="varSeg" role="group" aria-label="Layer"></div></div>
+      </div>
+      <div class="map-box" id="mapBox">
+        <canvas id="map" aria-label="Map of Sri Lankan river cells coloured by sediment signal"></canvas>
+        <div class="tip" id="tip" hidden></div>
+      </div>
+      <div class="legend">
+        <div class="ramp" id="ramp"></div>
+        <div class="ticks" id="ticks"></div>
+        <div class="season-note" id="seasonNote"></div>
+      </div>
+    </section>
+
+    <aside>
+      <section>
+        <h2>At a glance</h2>
+        <div class="stats" id="stats"></div>
+      </section>
+      <section>
+        <h2>What the images say</h2>
+        <ol class="findings" id="findings"></ol>
+      </section>
+      <section>
+        <h2>Stations</h2>
+        <div class="tbl"><table id="stTable"></table></div>
+        <div class="detail" id="detail"></div>
+      </section>
+    </aside>
+  </div>
+
+  <section class="methods">
+    <div><h3>How this was made</h3><p id="howText"></p></div>
+    <div><h3>Read the numbers carefully</h3><ul id="caveats"></ul></div>
+    <div><h3>Reproduce it</h3><p id="repro"></p></div>
+  </section>
+</div>
+
+<script>
+const DATA = /*__DATA__*/null;
+
+const SEASONS = ["ALL", "NEM", "FIM", "SWM", "SIM"];
+const SEASON_NAME = { ALL: "All seasons", NEM: "Northeast monsoon (Dec-Feb)", FIM: "First inter-monsoon (Mar-Apr)",
+  SWM: "Southwest monsoon (May-Sep)", SIM: "Second inter-monsoon (Oct-Nov)" };
+const VARS = {
+  spm:  { label: "SPM", unit: "g m⁻³", log: true,  lo: 2, hi: 200, fmt: v => v.toFixed(v < 10 ? 1 : 0) },
+  turb: { label: "Turbidity", unit: "FNU", log: true, lo: 2, hi: 200, fmt: v => v.toFixed(v < 10 ? 1 : 0) },
+  ndti: { label: "NDTI", unit: "", log: false, lo: -0.25, hi: 0.25, fmt: v => v.toFixed(2) },
+};
+// clear water -> silty -> lateritic; reads on both grounds
+const RAMP = ["#2f7f91", "#7fb2a3", "#d9c37a", "#d58a3f", "#a8461f", "#6e2412"];
+let season = "ALL", variable = "spm", selected = null;
+
+const $ = id => document.getElementById(id);
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+function hex(c) { return [1, 3, 5].map(i => parseInt(c.slice(i, i + 2), 16)); }
+const RAMP_RGB = RAMP.map(hex);
+function colorAt(t) {
+  t = Math.max(0, Math.min(1, t));
+  const x = t * (RAMP_RGB.length - 1), i = Math.min(Math.floor(x), RAMP_RGB.length - 2), f = x - i;
+  const a = RAMP_RGB[i], b = RAMP_RGB[i + 1];
+  return `rgb(${a.map((v, k) => Math.round(v + (b[k] - v) * f)).join(",")})`;
+}
+function norm(v) {
+  const s = VARS[variable];
+  return s.log ? (Math.log(v) - Math.log(s.lo)) / (Math.log(s.hi) - Math.log(s.lo)) : (v - s.lo) / (s.hi - s.lo);
+}
+function cellValue(i) {
+  const c = DATA.cells;
+  if (variable === "spm") return season === "ALL" ? c.spm_all[i] : c.spm[season][i];
+  if (variable === "turb") return c.turb_all[i];
+  return c.ndti_all[i];
+}
+
+// ---------- projection (equirectangular, cos(lat) corrected) ----------
+const B = { lon0: 79.5, lon1: 82.0, lat0: 5.85, lat1: 9.9 };
+const KX = Math.cos(7.8 * Math.PI / 180);
+let W = 0, H = 0, scale = 1, ox = 0, oy = 0;
+function layout() {
+  const box = $("mapBox"), cv = $("map"), dpr = window.devicePixelRatio || 1;
+  W = box.clientWidth; H = box.clientHeight;
+  cv.width = W * dpr; cv.height = H * dpr;
+  cv.getContext("2d").setTransform(dpr, 0, 0, dpr, 0, 0);
+  const sx = W / ((B.lon1 - B.lon0) * KX), sy = H / (B.lat1 - B.lat0);
+  scale = Math.min(sx, sy) * 0.98;
+  ox = (W - (B.lon1 - B.lon0) * KX * scale) / 2; oy = (H - (B.lat1 - B.lat0) * scale) / 2;
+}
+const px = lon => ox + (lon - B.lon0) * KX * scale;
+const py = lat => oy + (B.lat1 - lat) * scale;
+
+function draw() {
+  const ctx = $("map").getContext("2d");
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = css("--land"); ctx.strokeStyle = css("--coast"); ctx.lineWidth = 0.8;
+  for (const ring of DATA.outline) {
+    ctx.beginPath();
+    ring.forEach(([lo, la], k) => k ? ctx.lineTo(px(lo), py(la)) : ctx.moveTo(px(lo), py(la)));
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+  }
+  const c = DATA.cells, r = Math.max(1.6, scale / 160);
+  const order = [...c.lon.keys()].filter(i => cellValue(i) != null)
+    .sort((a, b) => cellValue(a) - cellValue(b));       // brightest on top
+  for (const i of order) {
+    ctx.fillStyle = colorAt(norm(cellValue(i)));
+    ctx.beginPath(); ctx.arc(px(c.lon[i]), py(c.lat[i]), r, 0, 6.2832); ctx.fill();
+  }
+  ctx.font = "500 11px " + css("--mono");
+  for (const s of DATA.stations) {
+    const x = px(s.lon), y = py(s.lat), on = selected === s.id;
+    ctx.lineWidth = on ? 2.4 : 1.4; ctx.strokeStyle = css("--ink"); ctx.fillStyle = css("--plate");
+    ctx.beginPath(); ctx.arc(x, y, on ? 6 : 4.5, 0, 6.2832); ctx.fill(); ctx.stroke();
+    if (on || W > 520) {
+      ctx.fillStyle = css("--ink");
+      const label = s.label;
+      const right = x < W * 0.6;
+      ctx.textAlign = right ? "left" : "right";
+      ctx.fillText(label, x + (right ? 8 : -8), y + 4);
+    }
+  }
+  ctx.textAlign = "left";
+  // scale bar: 50 km
+  const len = 50 / 111.32 * scale;          // 50 km; projection is cos-corrected so x and y share km scale
+  ctx.strokeStyle = css("--ink"); ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(16, H - 18); ctx.lineTo(16 + len, H - 18); ctx.stroke();
+  ctx.fillStyle = css("--muted"); ctx.fillText("50 km", 16, H - 24);
+}
+
+// ---------- hover ----------
+function nearest(mx, my) {
+  let best = null, bd = 64;
+  for (const s of DATA.stations) {
+    const d = (px(s.lon) - mx) ** 2 + (py(s.lat) - my) ** 2;
+    if (d < bd) { bd = d; best = { st: s }; }
+  }
+  if (best) return best;
+  bd = 36;
+  const c = DATA.cells;
+  for (let i = 0; i < c.lon.length; i++) {
+    if (cellValue(i) == null) continue;
+    const d = (px(c.lon[i]) - mx) ** 2 + (py(c.lat[i]) - my) ** 2;
+    if (d < bd) { bd = d; best = { cell: i }; }
+  }
+  return best;
+}
+function onMove(e) {
+  const rect = $("map").getBoundingClientRect(), mx = e.clientX - rect.left, my = e.clientY - rect.top;
+  const hit = nearest(mx, my), tip = $("tip");
+  if (!hit) { tip.hidden = true; return; }
+  const v = VARS[variable];
+  if (hit.st) {
+    tip.textContent = `${hit.st.label} · ${hit.st.n} clear scenes`;
+  } else {
+    const i = hit.cell, c = DATA.cells;
+    tip.textContent = `${v.label} ${v.fmt(cellValue(i))} ${v.unit} · ${c.n[i]} scenes · ${c.lat[i].toFixed(3)}°N ${c.lon[i].toFixed(3)}°E`;
+  }
+  tip.style.left = mx + "px"; tip.style.top = my + "px";
+  if (mx > W - 260) tip.style.transform = "translate(calc(-100% - 12px), -50%)"; else tip.style.transform = "";
+  tip.hidden = false;
+}
+function onClick(e) {
+  const rect = $("map").getBoundingClientRect();
+  const hit = nearest(e.clientX - rect.left, e.clientY - rect.top);
+  if (hit && hit.st) select(hit.st.id);
+}
+
+// ---------- controls ----------
+function buildSeg(el, keys, labels, get, set) {
+  el.innerHTML = "";
+  for (const k of keys) {
+    const b = document.createElement("button");
+    b.type = "button"; b.textContent = labels[k]; b.id = "btn-" + el.id + "-" + k;
+    b.setAttribute("aria-pressed", String(get() === k));
+    b.onclick = () => { set(k); refresh(); };
+    el.appendChild(b);
+  }
+}
+function refresh() {
+  buildSeg($("seasonSeg"), SEASONS, { ALL: "All", NEM: "NEM", FIM: "FIM", SWM: "SWM", SIM: "SIM" },
+    () => season, k => { season = k; if (k !== "ALL") variable = "spm"; });
+  buildSeg($("varSeg"), Object.keys(VARS), { spm: "SPM", turb: "Turbidity", ndti: "NDTI" },
+    () => variable, k => { variable = k; if (k !== "spm") season = "ALL"; });
+  const v = VARS[variable];
+  $("ramp").style.background = `linear-gradient(90deg, ${RAMP.join(",")})`;
+  const ticks = v.log ? [v.lo, 5, 10, 20, 50, 100, v.hi] : [-0.25, -0.1, 0, 0.1, 0.25];
+  $("ticks").innerHTML = ticks.map(t => `<span>${t}</span>`).join("");
+  const shown = DATA.cells.lon.filter((_, i) => cellValue(i) != null).length;
+  $("seasonNote").textContent = `${SEASON_NAME[season]} · ${v.label}${v.unit ? " (" + v.unit + ")" : ""} · ${shown.toLocaleString()} river cells (1 km) · median of clear scenes, ${DATA.meta.period}` +
+    (variable !== "spm" ? " · seasonal split shown for SPM only" : "");
+  draw(); renderTable();
+}
+
+// ---------- side panel ----------
+const fmt1 = v => v == null ? "–" : (v < 10 ? v.toFixed(1) : Math.round(v).toString());
+function renderTable() {
+  const rows = DATA.stations.map(s => {
+    const val = season === "ALL" ? s.all : s.seasons[season];
+    const sw = val == null ? "transparent" : colorAt((Math.log(val) - Math.log(2)) / (Math.log(200) - Math.log(2)));
+    return `<tr data-id="${s.id}" class="${selected === s.id ? "sel" : ""}"><td><span class="sw" style="background:${sw}"></span>${s.label} <span class="zone">${s.zone}</span></td>` +
+      ["NEM", "FIM", "SWM", "SIM"].map(k => `<td>${fmt1(s.seasons[k])}</td>`).join("") + `<td>${s.n}</td></tr>`;
+  }).join("");
+  $("stTable").innerHTML = `<thead><tr><th>Station</th><th>NEM</th><th>FIM</th><th>SWM</th><th>SIM</th><th>Scenes</th></tr></thead><tbody>${rows}</tbody>`;
+  $("stTable").querySelectorAll("tbody tr").forEach(tr => tr.onclick = () => select(tr.dataset.id));
+}
+function select(id) {
+  selected = id; draw(); renderTable();
+  const s = DATA.stations.find(x => x.id === id);
+  if (!s) return;
+  // monthly climatology chart (log scale), drawn to scale
+  const w = 520, h = 190, m = { l: 40, r: 10, t: 14, b: 26 };
+  const vals = s.monthly, ok = vals.filter(v => v != null);
+  const lo = Math.max(1, Math.min(...ok) / 1.6), hi = Math.max(...ok) * 1.6;
+  const y = v => m.t + (h - m.t - m.b) * (1 - (Math.log(v) - Math.log(lo)) / (Math.log(hi) - Math.log(lo)));
+  const x = i => m.l + (w - m.l - m.r) * (i + 0.5) / 12;
+  const gridV = [1, 2, 5, 10, 20, 50, 100, 200, 500].filter(v => v >= lo && v <= hi);
+  const bw = (w - m.l - m.r) / 12 * 0.62;
+  let svg = `<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="Monthly median SPM at ${s.label}">`;
+  svg += `<rect x="${x(4) - (w - m.l - m.r) / 24}" y="${m.t}" width="${(w - m.l - m.r) * 5 / 12}" height="${h - m.t - m.b}" fill="var(--land)"/>`;
+  for (const g of gridV) svg += `<line x1="${m.l}" x2="${w - m.r}" y1="${y(g)}" y2="${y(g)}" stroke="var(--rule)"/><text x="${m.l - 6}" y="${y(g) + 4}" text-anchor="end" font-size="10" font-family="IBM Plex Mono, monospace" fill="var(--muted)">${g}</text>`;
+  vals.forEach((v, i) => {
+    if (v == null) return;
+    const t = (Math.log(v) - Math.log(2)) / (Math.log(200) - Math.log(2));
+    svg += `<rect x="${x(i) - bw / 2}" y="${y(v)}" width="${bw}" height="${h - m.b - y(v)}" fill="${colorAt(t)}"/>`;
+  });
+  "JFMAMJJASOND".split("").forEach((c, i) => svg += `<text x="${x(i)}" y="${h - 8}" text-anchor="middle" font-size="10" font-family="IBM Plex Mono, monospace" fill="var(--muted)">${c}</text>`);
+  svg += `<text x="${x(6)}" y="${m.t + 12}" text-anchor="middle" font-size="10" font-family="IBM Plex Mono, monospace" fill="var(--muted)">SW monsoon</text></svg>`;
+  $("detail").innerHTML = `<div class="eyebrow">${s.label} · ${s.river} · ${s.zone} zone</div>
+    <p style="margin:4px 0 8px;font-size:13.5px">${s.note}</p>${svg}
+    <p class="season-note">Monthly median estimated SPM (g m⁻³, log scale) from ${s.n} clear scenes, ${DATA.meta.station_period}. Months without bars had too few clear scenes.</p>`;
+}
+
+function init() {
+  const D = DATA;
+  $("eyebrow").textContent = `Sentinel-2 MSI · ${D.meta.n_scenes.toLocaleString()} scenes · ${D.meta.period}`;
+  $("lede").textContent = D.meta.lede;
+  $("stats").innerHTML = D.stats.map(s => `<div><b>${s.value}</b><span>${s.label}</span></div>`).join("");
+  $("findings").innerHTML = D.findings.map(f => `<li>${f}</li>`).join("");
+  $("howText").textContent = D.meta.how;
+  $("caveats").innerHTML = D.meta.caveats.map(c => `<li>${c}</li>`).join("");
+  $("repro").innerHTML = D.meta.repro;
+  layout(); refresh();
+  const first = D.stations.find(s => s.id === D.meta.default_station) || D.stations[0];
+  if (first) select(first.id);
+  $("map").addEventListener("mousemove", onMove);
+  $("map").addEventListener("mouseleave", () => $("tip").hidden = true);
+  $("map").addEventListener("click", onClick);
+  new ResizeObserver(() => { layout(); draw(); }).observe($("mapBox"));
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { draw(); if (selected) select(selected); });
+  new MutationObserver(() => { draw(); if (selected) select(selected); }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+}
+init();
+</script>

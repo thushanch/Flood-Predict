@@ -32,8 +32,15 @@ NECHAD_SPM = {
 }
 NECHAD_SPM["L9"] = NECHAD_SPM["L8"]      # OLI-2 shares OLI band centres
 
-# ACOLITE default non-water mask: rho(1600 nm) > 0.0215 (config/defaults.txt)
-SWIR_WATER_THRESHOLD = 0.0215
+# ACOLITE's default non-water threshold is rho_t(1600 nm) > 0.0215 (config/defaults.txt),
+# defined on ACOLITE's own top-of-atmosphere/DSF reflectance. On Sen2Cor surface
+# reflectance, narrow Sri Lankan rivers carry 0.02-0.03 of SWIR adjacency signal
+# from bright banks: at 0.0215 most clear river pixels were rejected, while
+# raising the limit to 0.04 kept 2-10x more pixels and changed median SPM by
+# only a few percent (test: Kelani, Kalu and Mahaweli stations, 29 clear
+# scenes, 2024-25). Land contamination is handled by the MNDWI and NDVI tests.
+SWIR_WATER_THRESHOLD_ACOLITE = 0.0215
+SWIR_WATER_THRESHOLD = 0.04
 
 
 def nechad(rho, A, C):

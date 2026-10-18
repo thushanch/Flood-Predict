@@ -5,7 +5,7 @@
 var YEAR = 2024;
 var SEASON = 'SWM';                 // NEM (Dec-Feb), FIM (Mar-Apr), SWM (May-Sep), SIM (Oct-Nov)
 var CS_THRESHOLD = 0.60;            // Cloud Score+ cs_cdf
-var JRC_MIN = 50, ERODE_M = 30, SWIR_MAX = 0.0215;
+var JRC_MIN = 50, ERODE_M = 30, SWIR_MAX = 0.04;   // Sen2Cor BOA limit, see sedrs/algorithms.py
 
 // Approximate station coordinates (replace with config/stations_snapped.yaml values)
 var stations = ee.FeatureCollection([
