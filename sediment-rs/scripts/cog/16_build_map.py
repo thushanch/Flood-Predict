@@ -18,7 +18,7 @@ from sedrs.seasons import season_of  # noqa: E402
 
 HERE = Path(__file__).resolve().parent
 cfg = load_settings()
-cells = pd.read_csv(OUT_DIR / "cog" / "river_cells.csv")
+cells = pd.read_csv(OUT_DIR / "cog" / "river_cells_metrics.csv")     # from 17_metrics.py
 # QC'd and de-duplicated by scripts/05_analyse.py (one row per station-day)
 st = pd.read_csv(OUT_DIR / "cog_stations" / "stations_clean.csv", parse_dates=["date"])
 scenes = sum(1 for _ in (DATA_DIR / "cog" / "stations").glob("*.csv"))     # every processed scene
@@ -77,7 +77,9 @@ def arr(col, nd=1):
 
 cell_json = {"lon": [round(v, 4) for v in cells["lon"]], "lat": [round(v, 4) for v in cells["lat"]],
              "spm_all": arr("spm_all"), "turb_all": arr("turb_all"), "ndti_all": arr("ndti_all", 3),
-             "n": [int(v) for v in cells["n_scenes"]], "spm": {k: arr(f"spm_{k}") for k in SEAS}}
+             "n": [int(v) for v in cells["n_scenes"]], "spm": {k: arr(f"spm_{k}") for k in SEAS},
+             "peak": [SEAS.index(v) if isinstance(v, str) else None for v in cells["peak_season"]],
+             "flood": arr("flood_ratio", 2)}
 
 # ---------------------------------------------------------------- numbers for the summary
 both = cells.dropna(subset=[f"spm_{k}" for k in SEAS])

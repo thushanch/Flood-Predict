@@ -45,7 +45,9 @@ python scripts/cog/13_river_network.py       # channel mask + station snapping
 for i in 0 1 2 3; do python scripts/cog/14_extract.py --shard $i/4 --workers 4 & done; wait
 python scripts/cog/15_aggregate.py           # 1 km river cells, maps, station table
 python scripts/05_analyse.py --data data/cog_analysis --out outputs/cog_stations
+python scripts/cog/17_metrics.py             # peak season, flood pulse, profiles, hillshade
 python scripts/cog/16_build_map.py           # interactive atlas HTML
+python scripts/cog/18_figures.py             # publication figures (PNG + PDF)
 ```
 
 ### Offline demo (no GEE needed)

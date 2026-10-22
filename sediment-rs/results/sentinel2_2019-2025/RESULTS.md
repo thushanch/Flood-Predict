@@ -1,7 +1,7 @@
 # Sentinel-2 river sediment signals, Sri Lanka — first national run
 
 Interactive version: `river_sediment_atlas.html` (open in a browser).
-Produced with the no-account pathway, `scripts/cog/10–16`; methods are in `docs/METHODS.md` §7.
+Produced with the no-account pathway, `scripts/cog/10–18`; methods are in `docs/METHODS.md` §7.
 
 ## Data processed
 
@@ -42,10 +42,24 @@ Produced with the no-account pathway, `scripts/cog/10–16`; methods are in `doc
    - Lower Mahaweli: 25–42× normal on 2 Dec.
 
    Values above about 500 g m⁻³ are beyond the red band's reliable range.
-6. **Cloud hides the wet-zone SW monsoon.** Wet-zone stations had 0–7 clear SW
+6. **On the Kalu the sediment comes from upstream.** Along the lower 54 km
+   (Fig. 3), red-band SPM goes from about 45 g m⁻³ near the mouth to 55–75
+   around Putupaula, then steps up to 100–200 beyond about 35 km toward
+   Ellagawa, in every season. The lower Kelani stays near 20 along its whole
+   length. That points to sources in the Ellagawa–Ratnapura reaches, where gem
+   dredging is documented. Narrower channels there may add some bank
+   contamination.
+7. **Flood pulse map (Fig. 2c).** 490 river cells were seen during
+   26 Nov–12 Dec 2025, at a median of 5.4× their normal level. The
+   interquartile range is 1.5–13×.
+8. **Peak-season map (Fig. 2b).** Of the 750 cells with at least three
+   seasons observed, the peak falls in SIM in 250, FIM in 223, NEM in 171 and
+   SWM in 106. The lower Mahaweli peaks in FIM and NEM; western rivers
+   mostly peak in SIM.
+9. **Cloud hides the wet-zone SW monsoon.** Wet-zone stations had 0–7 clear SW
    monsoon looks over seven years, against 44–47 at the dry-zone Mahaweli
    stations.
-7. **Method findings.**
+10. **Method findings.**
    - *NIR contamination:* red- and NIR-band SPM differ by 100–140 % at every
      station. Bank-vegetation adjacency contaminates NIR in 20 m pixels of
      these channels, so red-band SPM is used.
@@ -72,4 +86,9 @@ Produced with the no-account pathway, `scripts/cog/10–16`; methods are in `doc
 | `stations_clean.csv` | QC'd station-days. Columns `SPM_blend_*` hold red-band SPM in this run; see `summary.md` |
 | `seasonal_median_spm.csv`, `trends.csv`, `observation_counts.csv`, `algorithm_spread.csv`, `reservoir_trapping.csv` | station analysis outputs |
 | `stations_snapped.csv` | station locations snapped to the channel mask, with AOI source and size |
-| `figures/` | national seasonal maps, overview, station climatologies and time series |
+| `river_cells_metrics.csv` | per cell: peak season, seasonal swing, Cyclone Ditwah flood ratio, reach label |
+| `profiles.csv` | Kelani, Kalu and Mahaweli cells ordered downstream-to-upstream, with seasonal SPM |
+| `figures/fig1_sediment_map.(png,pdf)` | headline map: median SPM per river cell over hillshade, with stations, scale, north arrow and locator |
+| `figures/fig2_four_panel.(png,pdf)` | (a) median SPM, (b) peak season, (c) Ditwah flood pulse, (d) station trends |
+| `figures/fig3_profiles.(png,pdf)` | downstream profiles by season for the Kelani, Kalu and Mahaweli |
+| `figures/` (other) | national seasonal maps, overview, station climatologies and time series |

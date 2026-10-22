@@ -55,6 +55,10 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
 .tip { position: absolute; pointer-events: none; background: var(--ink); color: var(--plate); font: 12px/1.4 var(--mono); padding: 7px 9px; border-radius: 4px; white-space: nowrap; transform: translate(12px, -50%); }
 .legend { display: grid; gap: 6px; margin-top: 10px; }
 .ramp { height: 10px; border-radius: 2px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12.5px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; color: var(--ink); }
+.chip i { width: 11px; height: 11px; border-radius: 2px; display: inline-block; }
+.chip b { font: 500 11.5px var(--mono); color: var(--muted); }
 .ticks { display: flex; justify-content: space-between; font: 11px var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
 .season-note { font-size: 13px; color: var(--muted); margin: 8px 0 0; }
 aside { display: grid; gap: 22px; min-width: 0; }
@@ -110,6 +114,7 @@ code, .mono { font-family: var(--mono); font-size: .92em; }
       </div>
       <div class="legend">
         <div class="ramp" id="ramp"></div>
+        <div class="chips" id="chips" hidden></div>
         <div class="ticks" id="ticks"></div>
         <div class="season-note" id="seasonNote"></div>
       </div>
@@ -149,7 +154,15 @@ const VARS = {
   spm:  { label: "SPM", unit: "g m⁻³", log: true,  lo: 3, hi: 150, fmt: v => v.toFixed(v < 10 ? 1 : 0) },
   turb: { label: "Turbidity", unit: "FNU", log: true, lo: 3, hi: 150, fmt: v => v.toFixed(v < 10 ? 1 : 0) },
   ndti: { label: "NDTI", unit: "", log: false, lo: -0.25, hi: 0.25, fmt: v => v.toFixed(2) },
+  peak: { label: "Peak season", unit: "", categorical: true },
+  flood: { label: "Ditwah flood pulse", unit: "× normal", log: true, lo: 0.25, hi: 40, diverging: true,
+           fmt: v => v.toFixed(v < 10 ? 1 : 0) },
 };
+const PEAK_CODES = ["NEM", "FIM", "SWM", "SIM"];
+const PEAK_COLORS = ["#2a78d6", "#1baf7a", "#6b6a66", "#eb6834"];   // validated set; grey = neutral SWM
+const PEAK_NAMES = ["NE monsoon", "1st inter-monsoon", "SW monsoon", "2nd inter-monsoon"];
+const DIV = ["#2a78d6", "#9ab9de", "#d8d8d4", "#d9a066", "#8c3b0c"];
+const DIV_RGB = DIV.map(c => [1, 3, 5].map(i => parseInt(c.slice(i, i + 2), 16)));
 // clear water -> silty -> lateritic; reads on both grounds
 const RAMP = ["#2f7f91", "#7fb2a3", "#d9c37a", "#d58a3f", "#a8461f", "#6e2412"];
 let season = "ALL", variable = "spm", selected = null;
@@ -167,12 +180,30 @@ function colorAt(t) {
 }
 function norm(v) {
   const s = VARS[variable];
+  if (s.diverging) {                         // log scale with "1x" exactly at the midpoint
+    const l = Math.log10(v);
+    return l < 0 ? 0.5 * (1 - l / Math.log10(s.lo)) : 0.5 + 0.5 * l / Math.log10(s.hi);
+  }
   return s.log ? (Math.log(v) - Math.log(s.lo)) / (Math.log(s.hi) - Math.log(s.lo)) : (v - s.lo) / (s.hi - s.lo);
+}
+function divColor(t) {
+  t = Math.max(0, Math.min(1, t));
+  const x = t * (DIV_RGB.length - 1), i = Math.min(Math.floor(x), DIV_RGB.length - 2), f = x - i;
+  const a = DIV_RGB[i], b = DIV_RGB[i + 1];
+  return `rgb(${a.map((v, k) => Math.round(v + (b[k] - v) * f)).join(",")})`;
+}
+function cellColor(i) {
+  const v = cellValue(i);
+  if (variable === "peak") return PEAK_COLORS[v];
+  if (variable === "flood") return divColor(norm(v));
+  return colorAt(norm(v));
 }
 function cellValue(i) {
   const c = DATA.cells;
   if (variable === "spm") return season === "ALL" ? c.spm_all[i] : c.spm[season][i];
   if (variable === "turb") return c.turb_all[i];
+  if (variable === "peak") return c.peak[i];
+  if (variable === "flood") return c.flood[i];
   return c.ndti_all[i];
 }
 
@@ -205,7 +236,7 @@ function draw() {
   const order = [...c.lon.keys()].filter(i => cellValue(i) != null)
     .sort((a, b) => cellValue(a) - cellValue(b));       // brightest on top
   for (const i of order) {
-    ctx.fillStyle = colorAt(norm(cellValue(i)));
+    ctx.fillStyle = cellColor(i);
     ctx.beginPath(); ctx.arc(px(c.lon[i]), py(c.lat[i]), r, 0, 6.2832); ctx.fill();
   }
   ctx.font = "500 11px " + css("--mono");
@@ -255,8 +286,9 @@ function onMove(e) {
   if (hit.st) {
     tip.textContent = `${hit.st.label} · ${hit.st.n} clear scenes`;
   } else {
-    const i = hit.cell, c = DATA.cells;
-    tip.textContent = `${v.label} ${v.fmt(cellValue(i))} ${v.unit} · ${c.n[i]} scenes · ${c.lat[i].toFixed(3)}°N ${c.lon[i].toFixed(3)}°E`;
+    const i = hit.cell, c = DATA.cells, val = cellValue(i);
+    const what = variable === "peak" ? `Peak: ${PEAK_NAMES[val]}` : `${v.label} ${v.fmt(val)} ${v.unit}`;
+    tip.textContent = `${what} · ${c.n[i]} scenes · ${c.lat[i].toFixed(3)}°N ${c.lon[i].toFixed(3)}°E`;
   }
   tip.style.left = mx + "px"; tip.style.top = my + "px";
   if (mx > W - 260) tip.style.transform = "translate(calc(-100% - 12px), -50%)"; else tip.style.transform = "";
@@ -282,15 +314,29 @@ function buildSeg(el, keys, labels, get, set) {
 function refresh() {
   buildSeg($("seasonSeg"), SEASONS, { ALL: "All", NEM: "NEM", FIM: "FIM", SWM: "SWM", SIM: "SIM" },
     () => season, k => { season = k; if (k !== "ALL") variable = "spm"; });
-  buildSeg($("varSeg"), Object.keys(VARS), { spm: "SPM", turb: "Turbidity", ndti: "NDTI" },
-    () => variable, k => { variable = k; if (k !== "spm") season = "ALL"; });
+  buildSeg($("varSeg"), Object.keys(VARS), { spm: "SPM", turb: "Turbidity", ndti: "NDTI", peak: "Peak season",
+    flood: "Flood 2025" }, () => variable, k => { variable = k; if (k !== "spm") season = "ALL"; });
   const v = VARS[variable];
-  $("ramp").style.background = `linear-gradient(90deg, ${RAMP.join(",")})`;
-  const ticks = v.log ? [3, 5, 10, 20, 50, 100, 150] : [-0.25, -0.1, 0, 0.1, 0.25];
-  $("ticks").innerHTML = ticks.map(t => `<span>${t}</span>`).join("");
+  $("ramp").hidden = !!v.categorical;
+  $("chips").hidden = !v.categorical;
+  if (v.categorical) {
+    const counts = PEAK_CODES.map((_, k) => DATA.cells.peak.filter(x => x === k).length);
+    $("chips").innerHTML = PEAK_CODES.map((code, k) =>
+      `<span class="chip"><i style="background:${PEAK_COLORS[k]}"></i>${PEAK_NAMES[k]} <b>${counts[k]}</b></span>`).join("");
+    $("ticks").innerHTML = "";
+  } else {
+    $("ramp").style.background = `linear-gradient(90deg, ${(v.diverging ? DIV : RAMP).join(",")})`;
+    const ticks = v.diverging ? ["¼", "½", "1×", "3", "10", "40"] : v.log ? [3, 5, 10, 20, 50, 100, 150]
+      : [-0.25, -0.1, 0, 0.1, 0.25];
+    $("ticks").innerHTML = ticks.map(t => `<span>${t}</span>`).join("");
+  }
   const shown = DATA.cells.lon.filter((_, i) => cellValue(i) != null).length;
-  $("seasonNote").textContent = `${SEASON_NAME[season]} · ${v.label}${v.unit ? " (" + v.unit + ")" : ""} · ${shown.toLocaleString()} river cells (1 km) · median of clear scenes, ${DATA.meta.period}` +
-    (variable !== "spm" ? " · seasonal split shown for SPM only" : "");
+  const notes = {
+    peak: `Season with the highest median SPM in each cell · ${shown.toLocaleString()} cells with at least three seasons observed, ${DATA.meta.period}`,
+    flood: `Median SPM 26 Nov–12 Dec 2025 divided by the cell's median over the rest of 2024–2025 · ${shown.toLocaleString()} cells seen during the floods · blue = clearer than normal, brown = muddier`,
+  };
+  $("seasonNote").textContent = notes[variable] || (`${SEASON_NAME[season]} · ${v.label}${v.unit ? " (" + v.unit + ")" : ""} · ${shown.toLocaleString()} river cells (1 km) · median of clear scenes, ${DATA.meta.period}` +
+    (variable !== "spm" ? " · seasonal split shown for SPM only" : ""));
   draw(); renderTable();
 }
 
