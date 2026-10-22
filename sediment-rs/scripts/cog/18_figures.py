@@ -261,8 +261,8 @@ for r in t[has].itertuples():
     name = LABEL.get(r.id, r.id)
     pct = r.sk_pct_per_yr
     txt = f"{name} {'0' if abs(pct) < 0.5 else f'{pct:+.0f}'}%"
-    ax.annotate(txt, (r.lon, r.lat), xytext=TOFFS.get(name, OFFS.get(name, (6, 0, "left")))[:2],
-                textcoords="offset points", ha=TOFFS.get(name, OFFS.get(name, (6, 0, "left")))[2], va="center", fontsize=6,
+    dx, dy, ha = TOFFS.get(name, OFFS.get(name, (6, 0, "left")))
+    ax.annotate(txt, (r.lon, r.lat), xytext=(dx, dy), textcoords="offset points", ha=ha, va="center", fontsize=6,
                 color=INK, fontweight="semibold" if r.sk_significant else "normal", zorder=8)
 ax.set_title("(d) Station trends, 2019–2025", loc="left", pad=13)
 ax.text(0.0, 1.008, "seasonal Kendall slope, % per year", transform=ax.transAxes, fontsize=6, color=MUTED, va="bottom")
