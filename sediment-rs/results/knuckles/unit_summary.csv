@@ -1,0 +1,16 @@
+unit,name,area_km2,knuckles_share_pct,drains_knuckles,elev_mean_m,elev_max_m,slope_mean_deg,steep_gt20deg_pct,tree_pct,shrub_pct,grass_pct,crop_pct,built_pct,bare_pct,water_pct,wetland_pct,crop_bare_on_steep_pct,tanks_n,reservoirs_n,water_max_km2,tank_density_per_100km2,named_reservoirs,river_cells,spm_median,spm_SIM,spm_SWM,flood_ratio_median
+1,Mahaweli main stem + upper catchment (incl. Victoria),3237.0,1.1,True,686.0,2515.0,10.4,15.3,77.4,0.0,11.9,7.5,1.3,0.1,2.0,0.0,0.1,121,9,76.4,3.7,"Randenigala, Victoria, Kotmale",160,32.2,46.4,21.1,12.7
+2,Amban Ganga (Matale to Elahera and Polonnaruwa),1404.0,0.7,False,243.0,1476.0,6.7,8.8,76.1,0.0,5.6,14.9,0.8,0.0,2.7,0.0,0.0,50,6,61.6,3.6,"Parakrama Samudra, Moragahakanda, Bowatenna",16,21.0,28.4,39.5,10.2
+3,"Lower Amban Ganga, northern tributary A",525.0,0.0,False,102.0,334.0,2.4,0.6,73.3,0.0,6.9,16.1,0.2,0.0,3.6,0.0,0.0,15,1,25.1,2.9,Kaudulla,0,,,,
+4,Uva tributary (Uma Oya side),729.0,0.0,False,1216.0,2456.0,14.8,24.8,76.6,0.0,17.7,3.9,1.9,0.0,0.1,0.0,0.3,5,0,0.5,0.7,,0,,,,
+5,Right-bank tributary (east) A,509.0,0.0,False,140.0,667.0,3.6,2.9,57.2,0.0,17.4,20.8,0.1,0.0,4.9,0.1,0.0,34,3,27.8,6.7,Ulhitiya-Ratkinda,8,29.4,25.7,14.7,12.4
+6,Right-bank tributary near Manampitiya,437.0,0.0,False,65.0,526.0,1.9,1.0,42.1,0.0,14.8,40.4,0.4,0.0,2.3,0.0,0.0,57,3,15.7,13.1,,17,48.2,42.2,45.0,7.3
+7,Uva tributary (Badulu Oya side) A,402.0,0.0,False,537.0,2025.0,14.1,29.5,79.7,0.0,14.6,3.5,0.3,0.0,1.9,0.0,0.0,7,3,9.9,1.7,,0,,,,
+8,Uva tributary B,402.0,0.0,False,798.0,2028.0,16.2,32.1,83.8,0.0,12.8,2.7,1.2,0.0,0.0,0.0,0.1,1,0,0.0,0.2,,0,,,,
+9,"Lower Amban Ganga, northern tributary B",383.0,0.0,False,111.0,373.0,3.2,1.3,68.2,0.0,4.6,21.3,0.6,0.0,5.5,0.0,0.0,11,2,25.5,2.9,"Minneriya, Giritale",0,,,,
+10,North Knuckles -> Kalu Ganga (Laggala),306.0,54.1,True,398.0,1886.0,11.8,19.5,85.3,0.0,6.7,5.0,0.1,0.1,2.7,0.0,0.0,14,1,4.8,4.6,Kalu Ganga reservoir,0,,,,
+11,South Knuckles -> Hulu Ganga (to Victoria),254.0,59.9,True,903.0,1857.0,16.1,30.7,83.4,0.0,12.0,0.4,0.5,0.0,3.7,0.0,0.1,0,0,0.0,0.0,,0,,,,
+12,East Knuckles -> Mahaweli A (Heen Ganga side),130.0,76.2,True,644.0,1849.0,19.1,43.0,90.1,0.0,6.2,3.7,0.0,0.0,0.1,0.0,0.0,4,0,0.1,3.1,,0,,,,
+13,East Knuckles -> Mahaweli B,121.0,37.6,True,656.0,1566.0,16.1,31.1,85.7,0.0,10.0,3.9,0.2,0.0,0.2,0.0,0.2,2,0,0.2,1.7,,0,,,,
+14,North Knuckles tributary A,120.0,55.1,True,611.0,1859.0,16.3,32.5,87.1,0.0,4.2,0.6,0.0,0.0,8.1,0.0,0.0,2,0,0.0,1.7,,0,,,,
+15,North Knuckles tributary B,101.0,36.7,True,710.0,1609.0,15.9,29.2,91.9,0.0,6.7,1.1,0.2,0.0,0.0,0.0,0.1,0,0,0.0,0.0,,0,,,,
