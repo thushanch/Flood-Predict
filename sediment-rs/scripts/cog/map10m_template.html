@@ -1,0 +1,207 @@
+<title>Sri Lanka Rivers at 10 m</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,500..800&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: the island fills the screen; one instrument panel floats top-left on wide screens and becomes a
+   bottom sheet on phones. Colour comes from the data (sediment ochres); chrome stays quiet. */
+:root {
+  --sea: #d9e3e6; --land: #eef0ea; --land-edge: #9aa59f;
+  --panel: rgba(251, 252, 249, 0.96); --ink: #1d2422; --muted: #5d6763; --rule: #d6dbd5;
+  --accent: #8a4b12; --chip: #e7ebe4; --chip-on: #1d2422; --chip-on-ink: #f6f7f3;
+  --f-display: "Archivo", "Arial Narrow", system-ui, sans-serif;
+  --f-body: "Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --sea: #0e171b; --land: #1f2523; --land-edge: #47524d;
+    --panel: rgba(22, 27, 26, 0.95); --ink: #e8ebe6; --muted: #9ba49f; --rule: #333b38;
+    --accent: #e0a35a; --chip: #2a312f; --chip-on: #e8ebe6; --chip-on-ink: #161b1a; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --sea: #0e171b; --land: #1f2523; --land-edge: #47524d;
+  --panel: rgba(22, 27, 26, 0.95); --ink: #e8ebe6; --muted: #9ba49f; --rule: #333b38;
+  --accent: #e0a35a; --chip: #2a312f; --chip-on: #e8ebe6; --chip-on-ink: #161b1a; color-scheme: dark;
+}
+html, body { height: 100%; }
+body { background: var(--sea); color: var(--ink); font-family: var(--f-body); font-size: 14px; }
+#map { position: fixed; inset: 0; background: var(--sea); }
+.panel {
+  position: fixed; z-index: 500; background: var(--panel); border: 1px solid var(--rule); border-radius: 10px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12); color: var(--ink);
+  top: calc(12px + env(safe-area-inset-top, 0px)); left: calc(12px + env(safe-area-inset-left, 0px));
+  width: min(360px, calc(100vw - 24px)); max-height: calc(100% - 24px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  overflow: auto; padding: 16px 18px; display: grid; gap: 14px;
+}
+h1 { font-family: var(--f-display); font-stretch: 82%; font-weight: 750; font-size: 1.55rem; line-height: 1.05;
+     margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
+.sub { margin: 4px 0 0; color: var(--muted); font-size: 0.86rem; line-height: 1.4; }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; border-top: 1px solid var(--rule);
+         border-bottom: 1px solid var(--rule); padding-block: 10px; }
+.stat b { display: block; font-family: var(--f-mono); font-weight: 500; font-size: 1.05rem; font-variant-numeric: tabular-nums; }
+.stat span { color: var(--muted); font-size: 0.72rem; line-height: 1.25; display: block; }
+.label { font-family: var(--f-display); font-stretch: 85%; font-weight: 650; font-size: 0.72rem;
+         letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin: 0 0 6px; }
+.ramp { height: 10px; border-radius: 2px; background: linear-gradient(90deg, __RAMP__); }
+.ticks { display: flex; justify-content: space-between; font-family: var(--f-mono); font-size: 0.7rem;
+         color: var(--muted); margin-top: 3px; font-variant-numeric: tabular-nums; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chips button { font: 500 0.78rem var(--f-body); border: 0; border-radius: 999px; padding: 5px 11px; cursor: pointer;
+                background: var(--chip); color: var(--ink); }
+.chips button[aria-pressed="true"] { background: var(--chip-on); color: var(--chip-on-ink); }
+.chips button:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.hint { color: var(--muted); font-size: 0.78rem; line-height: 1.4; margin: 6px 0 0; }
+details { border-top: 1px solid var(--rule); padding-top: 10px; }
+summary { cursor: pointer; font-weight: 600; font-size: 0.84rem; }
+details p { color: var(--muted); font-size: 0.8rem; line-height: 1.5; margin: 8px 0 0; max-width: 62ch; }
+.leaflet-container { background: var(--sea); font-family: var(--f-body); }
+.leaflet-popup-content-wrapper, .leaflet-popup-tip { background: var(--panel); color: var(--ink); }
+.leaflet-popup-content { margin: 12px 14px; font-size: 0.8rem; line-height: 1.4; }
+.pop h3 { margin: 0 0 6px; font-family: var(--f-display); font-stretch: 85%; font-size: 0.95rem; }
+.pop .row { display: grid; grid-template-columns: 2.8em 1fr 4.2em; align-items: center; gap: 6px;
+            font-family: var(--f-mono); font-size: 0.74rem; font-variant-numeric: tabular-nums; }
+.pop .bar { height: 7px; border-radius: 2px; }
+.pop .meta { color: var(--muted); margin-top: 6px; font-size: 0.72rem; }
+.leaflet-control-zoom a { background: var(--panel) !important; color: var(--ink) !important; border-color: var(--rule) !important; }
+.leaflet-control-attribution { background: var(--panel) !important; color: var(--muted) !important; font-size: 10px; }
+.leaflet-control-attribution a { color: var(--muted) !important; }
+.leaflet-control-scale-line { background: var(--panel); color: var(--ink); border-color: var(--ink); }
+.leaflet-top.leaflet-right { top: env(safe-area-inset-top, 0px); right: env(safe-area-inset-right, 0px); }
+.leaflet-bottom { bottom: env(safe-area-inset-bottom, 0px); }
+@media (max-width: 640px) {
+  .panel { top: auto; bottom: calc(10px + env(safe-area-inset-bottom, 0px)); left: max(10px, env(safe-area-inset-left, 0px));
+           right: max(10px, env(safe-area-inset-right, 0px)); width: auto; max-height: 46%; padding: 12px 14px; gap: 10px; }
+  h1 { font-size: 1.25rem; }
+  .leaflet-bottom.leaflet-left { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .leaflet-zoom-anim .leaflet-zoom-animated { transition: none !important; } }
+/* Leaflet 1.9.4 stylesheet (BSD-2-Clause), inlined because the page may load stylesheets only from Google Fonts */
+__LEAFLET_CSS__
+</style>
+
+<div id="map" role="region" aria-label="Map of river sediment in Sri Lanka"></div>
+<section class="panel" aria-labelledby="ttl">
+  <header>
+    <h1 id="ttl">Sri Lanka Rivers at 10 m</h1>
+    <p class="sub">Suspended sediment in river channels from Sentinel-2, 2019–2025. Every coloured pixel is 10 × 10 m of river water.</p>
+  </header>
+  <div class="stats">
+    <div class="stat"><b>__KM__</b><span>km of channel mapped</span></div>
+    <div class="stat"><b>__CELLS__</b><span>1 km river cells</span></div>
+    <div class="stat"><b>__MED__</b><span>median g m⁻³ across cells</span></div>
+  </div>
+  <div>
+    <p class="label">Surface SPM, g m⁻³ (log scale)</p>
+    <div class="ramp" role="img" aria-label="Colour scale from 5 to 200 grams per cubic metre"></div>
+    <div class="ticks"><span>5</span><span>10</span><span>20</span><span>50</span><span>100</span><span>200</span></div>
+  </div>
+  <div>
+    <p class="label">Show</p>
+    <div class="chips" id="mode">
+      <button type="button" id="m-px" aria-pressed="true">10 m pixels</button>
+      <button type="button" id="m-cell" aria-pressed="false">1 km cells</button>
+    </div>
+    <div class="chips" id="seasons" style="margin-top:8px" hidden>
+      <button type="button" data-s="spm" aria-pressed="true">All year</button>
+      <button type="button" data-s="spm_NEM" aria-pressed="false">NE monsoon</button>
+      <button type="button" data-s="spm_FIM" aria-pressed="false">Inter-monsoon 1</button>
+      <button type="button" data-s="spm_SWM" aria-pressed="false">SW monsoon</button>
+      <button type="button" data-s="spm_SIM" aria-pressed="false">Inter-monsoon 2</button>
+    </div>
+    <p class="hint" id="hint">Zoom in to see single 10 m pixels; tap a river in 1 km mode for its seasons.</p>
+  </div>
+  <details>
+    <summary>How this map was made</summary>
+    <p>River channels were mapped at 10 m from how often each pixel was open water in __FREQN__ low-cloud Sentinel-2 views, searching within 400 m of streams draining at least 25 km². Lakes, reservoirs, tanks, lagoons and the coastal strip are excluded.</p>
+    <p>Sediment is the red-band suspended particulate matter of Nechad et al. (2010) on Sen2Cor surface reflectance, averaged as a geometric mean over clear views (median __VIEWS__ per pixel). A pixel counts when it is cloud-free, at least 50 m from cloud, and clearly water (NDWI above 0.15).</p>
+    <p>Values are uncalibrated estimates: compare rivers, reaches and seasons rather than reading single numbers. Channels narrower than about 20 m, or hidden under trees, are not mapped. Seasons: NE monsoon Dec–Feb, inter-monsoon 1 Mar–Apr, SW monsoon May–Sep, inter-monsoon 2 Oct–Nov.</p>
+  </details>
+</section>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+(async function () {
+  const LO = Math.log10(5), HI = Math.log10(200);
+  const STOPS = __STOPS__;
+  function colour(v) {
+    if (v == null || !(v > 0)) return null;
+    let t = (Math.log10(v) - LO) / (HI - LO); t = Math.max(0, Math.min(1, t));
+    const i = Math.min(STOPS.length - 2, Math.floor(t * (STOPS.length - 1)));
+    const f = t * (STOPS.length - 1) - i, a = STOPS[i], b = STOPS[i + 1];
+    return `rgb(${a.map((x, k) => Math.round(x + (b[k] - x) * f)).join(",")})`;
+  }
+  const css = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const map = L.map("map", { zoomControl: false, minZoom: 7, maxZoom: 16, attributionControl: true,
+                             maxBounds: [[4.8, 78.6], [10.9, 82.9]], maxBoundsViscosity: 0.8 });
+  L.control.zoom({ position: "topright" }).addTo(map);
+  L.control.scale({ position: "bottomright", imperial: false }).addTo(map);
+  map.attributionControl.setPrefix("").addAttribution("Sentinel-2 L2A (ESA/Copernicus, AWS Open Data) · Copernicus GLO-90 · Natural Earth");
+  map.fitBounds([[5.9, 79.6], [9.85, 81.9]]);
+
+  const outline = __OUTLINE__;
+  const land = L.geoJSON(outline, { interactive: false, style: () => ({ color: css("--land-edge"), weight: 0.8,
+                                     fillColor: css("--land"), fillOpacity: 1 }) }).addTo(map);
+  const restyle = () => land.setStyle({ color: css("--land-edge"), fillColor: css("--land") });
+  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", restyle);
+  new MutationObserver(restyle).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+
+  const IDX = await fetch("index.json").then((r) => r.json());
+  const packs = {};
+  const pack = (kind, z) => (packs[kind + z] ??= fetch(`${kind}_z${z}.bin`).then((r) => r.arrayBuffer()));
+  const PackLayer = L.GridLayer.extend({
+    createTile(c, done) {
+      const img = document.createElement("img");
+      img.alt = ""; img.setAttribute("role", "presentation");
+      const e = IDX[this.options.kind]?.[c.z]?.[`${c.x}/${c.y}`];
+      if (!e) { setTimeout(() => done(null, img), 0); return img; }
+      pack(this.options.kind, c.z).then((buf) => {
+        const url = URL.createObjectURL(new Blob([new Uint8Array(buf, e[0], e[1])], { type: "image/png" }));
+        img.onload = () => { URL.revokeObjectURL(url); done(null, img); };
+        img.src = url;
+      }).catch((err) => done(err, img));
+      return img;
+    },
+  });
+  new PackLayer({ kind: "hill", minNativeZoom: 6, maxNativeZoom: 10, maxZoom: 16, opacity: 0.9 }).addTo(map);
+  const pxLayer = new PackLayer({ kind: "rivers", minNativeZoom: 7, maxNativeZoom: 14, maxZoom: 16 }).addTo(map);
+
+  const cells = await fetch("cells.json").then((r) => r.json());
+  const ci = Object.fromEntries(cells.cols.map((c, i) => [c, i]));
+  const canvas = L.canvas({ padding: 0.3 });
+  let season = "spm";
+  const marks = cells.rows.map((r) => L.circleMarker([r[ci.lat], r[ci.lon]], { renderer: canvas, radius: 3.2,
+    stroke: false, fillOpacity: 0.95 }).on("click", (ev) => pop(r, ev.latlng)));
+  const cellLayer = L.layerGroup(marks);
+  function paint() {
+    const rad = Math.max(2, Math.min(9, (map.getZoom() - 6) * 1.4));
+    marks.forEach((m, i) => { const col = colour(cells.rows[i][ci[season]]);
+      m.setStyle({ fillColor: col || css("--muted"), fillOpacity: col ? 0.95 : 0.25 }); m.setRadius(rad); });
+  }
+  map.on("zoomend", () => { if (map.hasLayer(cellLayer)) paint(); });
+  const fmt = (v) => (v == null ? "–" : v >= 100 ? v.toFixed(0) : v.toFixed(1));
+  function pop(r, at) {
+    const names = [["spm_NEM", "NEM"], ["spm_FIM", "FIM"], ["spm_SWM", "SWM"], ["spm_SIM", "SIM"]];
+    const max = Math.max(...names.map(([k]) => r[ci[k]] || 0), r[ci.spm] || 0);
+    const rows = names.map(([k, lab]) => { const v = r[ci[k]];
+      const w = v ? Math.max(4, 100 * Math.log10(1 + v) / Math.log10(1 + max)) : 0;
+      return `<div class="row"><span>${lab}</span><span class="bar" style="width:${w}%;background:${colour(v) || "transparent"}"></span><span>${fmt(v)}</span></div>`; }).join("");
+    L.popup({ maxWidth: 240 }).setLatLng(at).setContent(`<div class="pop"><h3>${fmt(r[ci.spm])} g m⁻³ all year</h3>${rows}
+      <div class="meta">Peak season ${r[ci.peak] || "–"} · NDTI ${r[ci.ndti]} · ${r[ci.px]} river pixels in this 1 km cell<br>${r[ci.lat].toFixed(3)}° N, ${r[ci.lon].toFixed(3)}° E</div></div>`).openOn(map);
+  }
+  const bPx = document.getElementById("m-px"), bCell = document.getElementById("m-cell"), seas = document.getElementById("seasons");
+  function mode(cellsOn) {
+    bPx.setAttribute("aria-pressed", String(!cellsOn)); bCell.setAttribute("aria-pressed", String(cellsOn));
+    seas.hidden = !cellsOn;
+    if (cellsOn) { map.removeLayer(pxLayer); cellLayer.addTo(map); paint(); }
+    else { map.removeLayer(cellLayer); pxLayer.addTo(map); }
+  }
+  bPx.addEventListener("click", () => mode(false));
+  bCell.addEventListener("click", () => mode(true));
+  seas.querySelectorAll("button").forEach((b) => b.addEventListener("click", () => {
+    season = b.dataset.s; seas.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x === b))); paint();
+  }));
+})();
+</script>
