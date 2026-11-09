@@ -4,9 +4,11 @@ Inputs from 40_water10m.py (data/project_layers/s2_10m/). For each Sentinel-2 sc
 <= 90 %): SCL is read first for every block; the 10 m bands (B03, B04, B08) are read only for blocks holding a
 water object that is at least 30 % cloud-free in this scene.
 
-Valid water pixel (10 m): SCL clear, NDVI < 0.05, NIR < 0.15, and
-  tanks:  NDWI > 0.05 and not on the shoreline (all 8 neighbours also water in this scene)
-  rivers: NDWI > 0.15 (purer water; channels are too narrow to drop the shoreline pixels)
+Valid water pixel (10 m): SCL clear and >= 50 m from cloud or cloud shadow, NDVI < 0.05, NIR < 0.15, and
+  tanks:  NDWI > 0.05, >= 30 m inside this scene's shoreline, and SWIR (B11, 20 m) < 0.04. A first run that kept
+          everything 10 m inside the shoreline and had no SWIR test read the dry-season tanks 3-7 x higher than
+          the 20 m analysis: shallow margins where the bottom or wet mud shows through. This rule removes them.
+  rivers: NDWI > 0.15 (purer water; channels are too narrow for a shoreline buffer or the 20 m SWIR test)
 Per object and scene (>= 10 valid pixels): medians of green, red, NIR reflectance, NDTI = (R-G)/(R+G)
 (Lacaux et al. 2007), SPM from red (Nechad et al. 2010/2016, S2 B4) and turbidity from red (Dogliotti et al.
 2015). Water spread (tanks) only when >= 90 % of the tank's maximum extent is clear.
@@ -55,6 +57,7 @@ with rasterio.open(D / "objects.tif") as d:
 with rasterio.open(D / "subws.tif") as d:
     subws = d.read(1)
 n_sw = int(subws.max())
+CLOUDY = (3, 8, 9, 10)                                             # shadow, cloud (medium, high), cirrus
 SEAS = {12: 0, 1: 0, 2: 0, 3: 1, 4: 1, 5: 2, 6: 2, 7: 2, 8: 2, 9: 2, 10: 3, 11: 3}   # NEM FIM SWM SIM
 
 # ---------------------------------------------------------------- per-block static arrays
@@ -118,7 +121,8 @@ def process(row):
         clear_cnt = {}
         for b in tb:
             s = g10.read_block({"SCL": ds["SCL"]}, b, bands=())["SCL"]
-            ok = b["own"] & ~np.isin(s, cog.SCL_BAD)
+            cloudy = ndi.binary_dilation(np.isin(s, CLOUDY), iterations=5)       # 50 m buffer
+            ok = b["own"] & ~np.isin(s, cog.SCL_BAD) & ~cloudy
             scl[id(b)] = ok
             if len(b["ids"]):
                 ids, cnt = np.unique(b["obj"][ok & (b["obj"] > 0)], return_counts=True)
@@ -132,8 +136,8 @@ def process(row):
         for b in tb:
             if not any(int(i) in good for i in b["ids"]):
                 continue
-            x = g10.read_block(ds, b)
-            g, r, n = x["B03"], x["B04"], x["B08"]
+            x = g10.read_block(ds, b, ("B03", "B04", "B08", "B11"))
+            g, r, n, sw_ = x["B03"], x["B04"], x["B08"], x["B11"]
             clear = scl[id(b)] & np.isfinite(g) & np.isfinite(r) & np.isfinite(n)
             with np.errstate(divide="ignore", invalid="ignore"):
                 ndwi = (g - n) / (g + n)
@@ -147,9 +151,10 @@ def process(row):
             veg[2] += np.bincount(swl, weights=(ndvi[land] < 0.3), minlength=n_sw + 1)
             # water pixels
             ob = b["obj"]
-            interior = ndi.binary_erosion(wat, structure=np.ones((3, 3)), border_value=1)
+            interior = ndi.binary_erosion(wat, structure=np.ones((3, 3)), iterations=3, border_value=1)
             base = clear & (ndvi < 0.05) & (n < 0.15)
-            v = base & np.where(ob > 100000, ndwi > 0.15, interior & (ndwi > 0.05)) & (ob > 0)
+            tank_ok = interior & (ndwi > 0.05) & (np.nan_to_num(sw_, nan=1.0) < alg.SWIR_WATER_THRESHOLD)
+            v = base & np.where(ob > 100000, ndwi > 0.15, tank_ok) & (ob > 0)
             sel = ob[v]
             keep = np.isin(sel, list(good))
             if keep.any():

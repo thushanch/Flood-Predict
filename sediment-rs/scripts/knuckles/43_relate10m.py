@@ -125,6 +125,10 @@ for oid, g in tur.groupby("obj"):
                  "trend_pct_per_yr": round(sk["pct_per_yr"], 1) if sk.get("pct_per_yr") is not None else None,
                  "trend_p": sk.get("p")})
 osum = pd.DataFrame(rows)
+# a reservoir name belongs to the largest object it matched; small tanks nearby lose it
+osum["name"] = osum["name"].fillna("").str.replace(r" \(\d\)$", "", regex=True)
+keep_name = osum[osum["name"] != ""].sort_values("area_ha").drop_duplicates("name", keep="last")["obj_id"]
+osum.loc[~osum["obj_id"].isin(keep_name), "name"] = ""
 osum["trend_q"] = trends.bh_fdr(osum["trend_p"].astype(float))
 osum.to_csv(R / "object_summary.csv", index=False)
 print(osum.groupby("kind").agg(n=("obj_id", "size"), obs=("n_obs", "median"), ndti=("ndti_median", "median"),

@@ -5,7 +5,8 @@ The grid is UTM 44N (EPSG:32644) at 10 m, snapped to multiples of 20 m so every 
 (the covering tile whose centre is nearest), so overlapping tiles are read only once per date. Reads go block by
 block (the COGs' internal 1024 x 1024 tiles), and only blocks that hold owned project pixels are read.
 
-10 m bands: B03 (green), B04 (red), B08 (NIR). SCL is 20 m and is repeated 2 x 2 onto the 10 m grid.
+10 m bands: B03 (green), B04 (red), B08 (NIR). SCL and B11 (SWIR) are 20 m and are repeated 2 x 2 onto the
+10 m grid.
 """
 from __future__ import annotations
 
@@ -107,7 +108,10 @@ def tile_ul_from_scenes(scenes) -> dict:
     return out
 
 
-def open_bands(prefix, bands=("B03", "B04", "B08", "SCL")):
+BANDS_20M = ("B11",)
+
+
+def open_bands(prefix, bands=("B03", "B04", "B08", "B11", "SCL")):
     import rasterio
     return {b: rasterio.open(cog.band_url(prefix, b)) for b in bands}
 
@@ -115,7 +119,7 @@ def open_bands(prefix, bands=("B03", "B04", "B08", "SCL")):
 def read_block(ds: dict, blk: dict, bands=("B03", "B04", "B08")):
     """Read one block; returns arrays cropped to the grid part (gh x gw). Reflectance as float32 (NaN = no data).
 
-    SCL (20 m) is read for the full block and repeated 2 x 2 before cropping.
+    SCL and B11 (20 m) are read for the full block and repeated 2 x 2 before cropping.
     """
     from rasterio.windows import Window
     sl = (slice(blk["br0"], blk["br0"] + blk["gh"]), slice(blk["bc0"], blk["bc0"] + blk["gw"]))
@@ -126,7 +130,12 @@ def read_block(ds: dict, blk: dict, bands=("B03", "B04", "B08")):
         s = np.repeat(np.repeat(s, 2, 0), 2, 1)
         out["SCL"] = s[sl]
     for b in bands:
-        a = ds[b].read(1, window=Window(blk["col"], blk["row"], blk["w"], blk["h"]))[sl]
+        if b in BANDS_20M:
+            a = ds[b].read(1, window=Window(blk["col"] // 2, blk["row"] // 2, (blk["w"] + 1) // 2,
+                                            (blk["h"] + 1) // 2))
+            a = np.repeat(np.repeat(a, 2, 0), 2, 1)[sl]
+        else:
+            a = ds[b].read(1, window=Window(blk["col"], blk["row"], blk["w"], blk["h"]))[sl]
         r = a.astype(np.float32) * 1e-4
         r[a == 0] = np.nan
         out[b] = r
