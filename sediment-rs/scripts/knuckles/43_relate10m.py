@@ -335,7 +335,7 @@ fig.text(0.02, 0.945, f"{rel['counts']['tanks']} tanks ≥ 2 ha and {rel['counts
          fontsize=7, color=MUTED)
 fig.text(0.02, 0.20, "Zooms show per-pixel means at 10 m (pixels with ≥ 5 clear water views). NDTI is a band ratio; "
          "it does not depend on the absolute\nreflectance calibration, so it ranks water bodies reliably without "
-         "field data. Shoreline pixels are excluded for tanks.", fontsize=6, color=MUTED, va="top")
+         "field data. Tank pixels within 30 m of the day's shoreline are excluded.", fontsize=6, color=MUTED, va="top")
 for ext in ("png", "pdf"):
     fig.savefig(R / f"fig_t1_map10m.{ext}", bbox_inches="tight", facecolor="white")
 plt.close(fig)
