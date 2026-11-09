@@ -110,7 +110,7 @@ def mosaic(name, band_ids, descs):
             ys1 = Y1 - r0 * 10
             for s in srcs:
                 tr = s.transform
-                tr0 = int(round((tr.f - ys1) / -10))                    # tile row at strip top
+                tr0 = int(round((tr.f - ys1) / 10))                     # tile row at strip top
                 tc0 = int(round((X0 - tr.c) / 10))                      # tile col at grid col 0
                 rr0, rr1 = max(tr0, 0), min(tr0 + h, s.height)
                 cc0, cc1 = max(tc0, 0), min(tc0 + W, s.width)
@@ -175,7 +175,7 @@ ext = (X0, X1, Y0, Y1)
 ax.imshow(np.where(land > 0, 1.0, np.nan), extent=ext, cmap="Greys", vmin=0, vmax=8, zorder=0)
 ax.imshow(np.where(land > 0, hsu, np.nan), extent=ext, cmap="Greys_r", vmin=-0.3, vmax=1.2, alpha=0.35, zorder=1)
 im = ax.imshow(vis, extent=ext, cmap=cmap, norm=norm, interpolation="nearest", zorder=2)
-ax.set_xlim(370000, 600000)
+ax.set_xlim(335000, 600000)
 ax.set_ylim(650000, 1090000)
 ax.set_aspect("equal")
 ax.set_axis_off()

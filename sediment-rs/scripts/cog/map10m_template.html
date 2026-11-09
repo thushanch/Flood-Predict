@@ -117,7 +117,7 @@ __LEAFLET_CSS__
     <summary>How this map was made</summary>
     <p>River channels were mapped at 10 m from how often each pixel was open water in __FREQN__ low-cloud Sentinel-2 views, searching within 400 m of streams draining at least 25 km². Lakes, reservoirs, tanks, lagoons and the coastal strip are excluded.</p>
     <p>Sediment is the red-band suspended particulate matter of Nechad et al. (2010) on Sen2Cor surface reflectance, averaged as a geometric mean over clear views (median __VIEWS__ per pixel). A pixel counts when it is cloud-free, at least 50 m from cloud, and clearly water (NDWI above 0.15).</p>
-    <p>Values are uncalibrated estimates: compare rivers, reaches and seasons rather than reading single numbers. Channels narrower than about 20 m, or hidden under trees, are not mapped. Seasons: NE monsoon Dec–Feb, inter-monsoon 1 Mar–Apr, SW monsoon May–Sep, inter-monsoon 2 Oct–Nov.</p>
+    <p>Values are uncalibrated estimates: compare rivers, reaches and seasons rather than reading single numbers. Channels narrower than about 20 m, or hidden under trees, are not mapped. A few coastal canals and lagoon creeks pass the river test too, such as the Dutch Canal near Puttalam and creeks on the Jaffna peninsula. Seasons: NE monsoon Dec–Feb, inter-monsoon 1 Mar–Apr, SW monsoon May–Sep, inter-monsoon 2 Oct–Nov.</p>
   </details>
 </section>
 
@@ -142,26 +142,25 @@ __LEAFLET_CSS__
   map.fitBounds([[5.9, 79.6], [9.85, 81.9]]);
 
   const outline = __OUTLINE__;
-  const land = L.geoJSON(outline, { interactive: false, style: () => ({ color: css("--land-edge"), weight: 0.8,
+  map.createPane("land").style.zIndex = 150;                 // under the tile pane (200)
+  const land = L.geoJSON(outline, { pane: "land", interactive: false, style: () => ({ color: css("--land-edge"), weight: 0.8,
                                      fillColor: css("--land"), fillOpacity: 1 }) }).addTo(map);
   const restyle = () => land.setStyle({ color: css("--land-edge"), fillColor: css("--land") });
   window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", restyle);
   new MutationObserver(restyle).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
 
-  const IDX = await fetch("index.json").then((r) => r.json());
   const packs = {};
-  const pack = (kind, z) => (packs[kind + z] ??= fetch(`${kind}_z${z}.bin`).then((r) => r.arrayBuffer()));
+  const pack = (kind, z) => (packs[kind + z] ??= fetch(`${kind}_z${z}.json`).then((r) => r.json()));
   const PackLayer = L.GridLayer.extend({
     createTile(c, done) {
       const img = document.createElement("img");
       img.alt = ""; img.setAttribute("role", "presentation");
-      const e = IDX[this.options.kind]?.[c.z]?.[`${c.x}/${c.y}`];
-      if (!e) { setTimeout(() => done(null, img), 0); return img; }
-      pack(this.options.kind, c.z).then((buf) => {
-        const url = URL.createObjectURL(new Blob([new Uint8Array(buf, e[0], e[1])], { type: "image/png" }));
-        img.onload = () => { URL.revokeObjectURL(url); done(null, img); };
-        img.src = url;
-      }).catch((err) => done(err, img));
+      pack(this.options.kind, c.z).then((pk) => {
+        const b64 = pk[`${c.x}/${c.y}`];
+        if (!b64) { img.style.visibility = "hidden"; done(null, img); return; }
+        img.onload = () => done(null, img);
+        img.src = "data:image/png;base64," + b64;
+      }).catch((err) => { img.style.visibility = "hidden"; done(err, img); });
       return img;
     },
   });

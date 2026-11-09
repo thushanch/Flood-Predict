@@ -3,11 +3,12 @@
 Rivers: XYZ tiles (Web Mercator, 256 px) at zoom 7-14 wherever river pixels exist. Zoom 14 is ~9.5 m per pixel,
 i.e. the native 10 m. Lower zooms average log10(SPM) over the source pixels (a 10/40/160 m pyramid) and widen
 the lines slightly so narrow rivers stay visible. Hillshade tiles (zoom 6-10) give the relief underneath.
-Tiles are packed per zoom into one binary file plus a JSON index, so the page fetches a handful of files.
+Tiles are packed per zoom into one JSON file ({"x/y": base64 PNG}), so the page fetches a handful of files.
 
     python scripts/cog/24_webtiles.py
-Writes data/cog/r10m/web/: rivers_z{z}.bin, hill_z{z}.bin, index.json, cells.json
+Writes data/cog/r10m/web/: rivers_z{z}.json, hill_z{z}.json, cells.json
 """
+import base64
 import io
 import json
 import math
@@ -129,20 +130,19 @@ def render(z, x, y):
     return buf.getvalue()
 
 
-index = {"rivers": {}, "hill": {}}
 for z in range(7, 15):
     tx, ty = lonlat_to_tile(lon, lat, z)
     tiles = set(zip(tx.tolist(), ty.tolist()))
-    blob, idx_z = bytearray(), {}
+    if z >= 11:                          # neighbours too: river pixels near a tile edge may sit in the next tile
+        tiles = {(x + dx, y + dy) for x, y in tiles for dx in (-1, 0, 1) for dy in (-1, 0, 1)}
+    pk = {}
     for x, y in sorted(tiles):
         png = render(z, x, y)
-        if png is None:
-            continue
-        idx_z[f"{x}/{y}"] = [len(blob), len(png)]
-        blob += png
-    (WEB / f"rivers_z{z}.bin").write_bytes(bytes(blob))
-    index["rivers"][str(z)] = idx_z
-    print(f"z{z}: {len(idx_z)} river tiles, {len(blob) / 1e6:.1f} MB", flush=True)
+        if png is not None:
+            pk[f"{x}/{y}"] = base64.b64encode(png).decode()
+    txt = json.dumps(pk, separators=(",", ":"))
+    (WEB / f"rivers_z{z}.json").write_text(txt)
+    print(f"z{z}: {len(pk)} river tiles, {len(txt) / 1e6:.1f} MB", flush=True)
 
 # ------------------------------------------------------------------ hillshade tiles (zoom 6-10)
 hs = np.load(OUT_DIR / "cog" / "hillshade.npz")
@@ -154,7 +154,7 @@ hsv = np.where(land, hsv, np.nan)
 for z in range(6, 11):
     x0t, y0t = lonlat_to_tile(np.array([79.5]), np.array([9.9]), z)
     x1t, y1t = lonlat_to_tile(np.array([82.0]), np.array([5.85]), z)
-    blob, idx_z = bytearray(), {}
+    pk = {}
     for x in range(int(x0t[0]), int(x1t[0]) + 1):
         for y in range(int(y0t[0]), int(y1t[0]) + 1):
             b = tile_bounds(z, x, y)
@@ -175,13 +175,10 @@ for z in range(6, 11):
             buf = io.BytesIO()
             Image.fromarray(rgba, "RGBA").quantize(colors=32, method=Image.Quantize.FASTOCTREE).save(
                 buf, "PNG", optimize=True)
-            png = buf.getvalue()
-            idx_z[f"{x}/{y}"] = [len(blob), len(png)]
-            blob += png
-    (WEB / f"hill_z{z}.bin").write_bytes(bytes(blob))
-    index["hill"][str(z)] = idx_z
-    print(f"hill z{z}: {len(idx_z)} tiles, {len(blob) / 1e6:.1f} MB", flush=True)
-(WEB / "index.json").write_text(json.dumps(index, separators=(",", ":")))
+            pk[f"{x}/{y}"] = base64.b64encode(buf.getvalue()).decode()
+    txt = json.dumps(pk, separators=(",", ":"))
+    (WEB / f"hill_z{z}.json").write_text(txt)
+    print(f"hill z{z}: {len(pk)} tiles, {len(txt) / 1e6:.1f} MB", flush=True)
 
 # ------------------------------------------------------------------ 1 km cells for the click-through layer
 cells = pd.read_csv(M / "river_cells_1km.csv")
